@@ -1,44 +1,80 @@
 import socket
 import threading
+import queue
 
-server_ip = '127.0.0.1'  # Endereço IP do servidor
-server_port = 9999  # Porta do servidor
+class UDPServer:
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
-server_socket.bind((server_ip, server_port))  # Vincula o socket ao endereço e à porta do servidor
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.clients = set()
+        self.nicknames = {}
+        self.fragmented_messages = {}
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.bind((self.host, self.port))
+        print('Aguardando conexão de um cliente')
 
-clients = []
+    def broadcast(self):
+        while True:
+            while not self.messages.empty():
+                message, address = self.messages.get()
 
-def receber_mensagens(client_socket, client_address):
-    while True:
-        try:
-            data = client_socket.recv(1024)  # Recebe dados do cliente
-            if not data:
-                break
-            print(f"Cliente {client_address}: {data.decode('utf-8')}")
-            
-            # Enviar mensagem recebida para todos os clientes conectados (exceto para o remetente)
-            enviar_para_outros(client_socket, data, client_address)
-        except ConnectionResetError:
-            break
+                if address not in self.clients:
+                    self.clients.add(address)
+                    print(f'Conexão estabelecida com {address}')
+                    self.socket.sendto(f"{self.host}|{self.port}".encode('utf-8'), address)
 
+                try:
+                    decoded_message = message.decode('utf-8')
 
-def enviar_para_outros(sender_socket, message, sender_address):
-    for client in clients:
-        if client != sender_socket:
+                    if 'hi, meu nome eh:' in decoded_message:
+                        nickname = decoded_message.split(':', 1)[1].strip()
+                        self.nicknames[address] = nickname
+                        print(f'O nome de usuário do cliente {address} é {nickname}')
+                        self.socket.sendto('Você está conectado!'.encode('utf-8'), address)
+                        self.send_to_all(f'{nickname} entrou no chat!'.encode('utf-8'))
+
+                    else:
+                        sender_nickname = self.nicknames.get(address)
+                        if sender_nickname not in self.fragmented_messages:
+                            self.fragmented_messages[sender_nickname] = []
+
+                        if decoded_message == "finish": #final da mensagem fragmentada
+                            complete_message = ''.join(self.fragmented_messages[sender_nickname])
+                            self.fragmented_messages[sender_nickname] = []
+                            self.send_to_all(f"{sender_nickname}: {complete_message}")
+                        else:
+                            self.fragmented_messages[sender_nickname].append(decoded_message)
+                except:
+                    client_address = (address[0], address[1])  # Obtenha o endereço completo do cliente
+                    client_nickname = self.nicknames.get(client_address)  # Obtenha o apelido do cliente
+                    self.clients.remove(client_address)
+                    del self.nicknames[client_address]
+                    self.socket.sendto(f'{client_nickname} saiu da sala!'.encode('utf-8'), address)
+
+    def receive(self):
+        while True:
             try:
-                client.sendto(message, sender_address)
-            except ConnectionResetError:
-                clients.remove(client)
+                message, address = self.socket.recvfrom(1024)
+                if message:
+                    self.messages.put((message, address))
+            except Exception as e:
+                print(f"erro em receive: {e}")
 
+    def send_to_all(self, message):
+        for client in self.clients:
+            try:
+                self.socket.sendto(message.encode('utf-8'), client)
+            except:
+                pass
 
-while True:
-    client_data, client_address = server_socket.recvfrom(1024)  # Recebe dados e endereço do cliente
-    print(f"Conexão estabelecida com {client_address}")
-    
-    # Adiciona o novo cliente à lista de clientes
-    clients.append(client_address)
-    
-    # Inicia uma thread para receber mensagens do cliente
-    receive_thread = threading.Thread(target=receber_mensagens, args=(server_socket, client_address))
-    receive_thread.start()
+    def start(self):
+        self.messages = queue.Queue()
+        thread1 = threading.Thread(target=self.receive)
+        thread2 = threading.Thread(target=self.broadcast)
+        thread1.start()
+        thread2.start()
+
+if __name__ == "__main__":
+    server = UDPServer("localhost", 50000)
+    server.start()
