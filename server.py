@@ -76,4 +76,5 @@ class UDPServer:
         thread2.start()
 
 if __name__ == "__main__":
-    receive()
+    server = UDPServer("localhost", 50000)
+    server.start()
