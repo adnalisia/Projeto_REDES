@@ -2,6 +2,7 @@ import socket
 import threading
 from datetime import datetime
 from pathlib import Path
+import random
 
 
 class UDPClient: #criando a classe do cliente
@@ -33,7 +34,7 @@ class UDPClient: #criando a classe do cliente
         #conectando o cliente ao chat de mensagens:
         self.connect_thread()
         #chamando a função de tratamento de mensagens:
-        self.message_treatment()
+        self.message_treatment(starter_input)
 
     #função que avisa o servidor que um novo cliente se conectou
     def exchange_info(self, hello_message):
@@ -45,7 +46,13 @@ class UDPClient: #criando a classe do cliente
         thread.start()
 
     #função para tratar as mensagens seguintes:
-    def message_treatment(self):
+    def message_treatment(self,initial_message):
+        #variável com o tempo e a hora exata
+        now = datetime.now() 
+        #cria um timestamp pra ser usado no cabeçalho da mensagem e no titulo dos arquivos fragmentados
+        timestamp = f"{now.hour}:{now.minute}:{now.second} {now.day}/{now.month}/{now.year}"
+        segment = f"{self.client_IP}:{self.client_port}/~{self.nickname}: {initial_message} {timestamp}"
+        self.message_fragment(segment)
         #um loop que depende da flag de conexão
         while self.connection_flag: 
             message = input()
@@ -58,7 +65,7 @@ class UDPClient: #criando a classe do cliente
                 self.connection_flag = False
             else: #aqui coloca o cabeçalho nas mensagens
                 segment = f"{self.client_IP}:{self.client_port}/~{self.nickname}: {message} {timestamp}"
-                self.message_fragment(segment, timestamp) #chama a função para fragmentar as mensagens e mandar pro servidor
+                self.message_fragment(segment) #chama a função para fragmentar as mensagens e mandar pro servidor
 
     def receive_messages(self): #função para receber mensagens do servidor
         try:
@@ -75,22 +82,23 @@ class UDPClient: #criando a classe do cliente
             print(f"Error in receive_messages: {e}")
 
     #modulo que fragmenta mensagens     
-    def message_fragment(self, segment, timestamp):
+    def message_fragment(self, segment):
+        file_name = random.randint(0, 10000)
         #cria um arquivo .txt para a mensagem
-        with open(f'{timestamp}', 'wb') as file:
-            file.write(f"{segment}".encode())
-            #file.close()
+        file = open(f'{file_name}', 'w')
+        file.write(f"{segment}")
+        file.close()
             
         #verifica o tamanho do arquivo
-        size = Path(f'{timestamp}').stat().st_size
+        size = Path(f'{file_name}').stat().st_size
         #fragmenta arquivo maior que 1024 bytes
         if size > 1024:
             slice = 0
-            with open(f'{timestamp}', 'rb') as file:
+            with open(f'{file_name}', 'r') as file:
                 kbyte = file.read(1024)
             #loop que cria vários arquivos com 1024 bytes no máximo
                 while kbyte:
-                    new_file = f"{timestamp}{str(slice)}.txt"
+                    new_file = f"{file_name}{str(slice)}.txt"
                     frag_file = open(new_file, 'w')
                     frag_file.write(kbyte)
                     frag_file.close()
@@ -111,7 +119,7 @@ class UDPClient: #criando a classe do cliente
             
         else:
             #envia arquivo pro servidor
-            self.send_file_to_server(f'{timestamp}')
+            self.send_file_to_server(f'{file_name}')
             ###incluir classe e modulo do server###
             
             #informa o termino de envio da mensagem
