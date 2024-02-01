@@ -12,10 +12,13 @@ linha de comando no terminal de cada um dos clientes conectados à sala.
 2. Baixe a pasta com os arquivos .py contidos neste repósitório. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
 
 ### Bibliotecas utilizadas
-- socket
-
-<sub>Permiti com que cada computador possa realizar diversas operações de comunicação, sem que uma interfira na outra.</sub>
-- threading
-- datetime
-- pathlib
-- random
+- **socket**
+Permite com que cada computador possa realizar diversas operações de comunicação, sem que uma interfira na outra.
+- **threading**
+Permite a criação, inicialização e gerenciamento de threads dentro do programa.
+- **datetime**
+Permite a utilização e manipulação da hora e data do computador.
+- **pathlib**
+Permite a verificação do tamanho em bytes do arquivo.
+- **random**
+Permite a criação de números aleátorios.
