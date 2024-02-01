@@ -3,7 +3,6 @@ import threading
 from datetime import datetime
 from pathlib import Path
 import random
-import os
 
 
 class UDPClient: #criando a classe do cliente
