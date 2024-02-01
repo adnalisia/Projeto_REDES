@@ -6,7 +6,7 @@ server_port = 9999  # Porta do servidor
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
 server_socket.bind((server_ip, server_port))  # Vincula o socket ao endereço e à porta do servidor
-
+dufgygs
 clients = []
 
 def receber_mensagens(client_socket, client_address):
