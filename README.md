@@ -13,6 +13,7 @@ linha de comando no terminal de cada um dos clientes conectados à sala.
 
 ### Bibliotecas utilizadas
 - socket
+
 <sub>Permiti com que cada computador possa realizar diversas operações de comunicação, sem que uma interfira na outra.</sub>
 - threading
 - datetime
