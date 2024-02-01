@@ -22,7 +22,7 @@ class UDPServer:
                 if address not in self.clients:
                     self.clients.add(address)
                     print(f'Conexão estabelecida com {address}')
-                    self.socket.sendto(f"{self.host}|{self.port}".encode('utf-8'), address)
+                    self.socket.sendto(f"{self.host}/{self.port}".encode('utf-8'), address)
 
                 try:
                     decoded_message = message.decode('utf-8')
