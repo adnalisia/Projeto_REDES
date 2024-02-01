@@ -9,5 +9,12 @@ linha de comando no terminal de cada um dos clientes conectados à sala.
 ### Como rodar o programa
 
 1. É necessário ter o Python instalado no computador. Para isso, acesse o _https://www.python.org/downloads/_ e clique na versão mais atualizada do python
-2. Baixe a pasta com os arquivos .py contidos neste repósitório
-3. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
+2. Baixe a pasta com os arquivos .py contidos neste repósitório. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
+
+### Bibliotecas utilizadas
+- socket
+<sub>Permiti com que cada computador possa realizar diversas operações de comunicação, sem que uma interfira na outra.</sub>
+- threading
+- datetime
+- pathlib
+- random
