@@ -46,7 +46,7 @@ class UDPClient: #criando a classe do cliente
         thread.start()
 
     #função para tratar as mensagens seguintes:
-    def message_treatment(self,initial_message):
+    def message_treatment(self, initial_message):
         #variável com o tempo e a hora exata
         now = datetime.now() 
         #cria um timestamp pra ser usado no cabeçalho da mensagem e no titulo dos arquivos fragmentados
@@ -85,7 +85,7 @@ class UDPClient: #criando a classe do cliente
             while self.connection_flag: 
                 data, _ = self.socket.recvfrom(self.buffer_size)
                 #manda a mensagem pro modulo de reconstrução
-                message = self.message_defrag('',data) 
+                message = self.message_defrag('',data.decode()) 
                 #printa a mensagem na tela
                 print(message) 
 
@@ -94,18 +94,23 @@ class UDPClient: #criando a classe do cliente
 
     #modulo que fragmenta mensagens     
     def message_fragment(self, segment):
+        #cria um número aleatório para criação de arquivo
         file_name = random.randint(0, 10000)
         #cria um arquivo .txt para a mensagem
-        file = open(f'{file_name}', 'w')
-        file.write(f"{segment}")
-        file.close()
+        with open(f'{file_name}', 'w') as file:
+            #escreve mensagem no arquivo
+            file.write(f"{segment}")
+            file.close()
             
         #verifica o tamanho do arquivo
         size = Path(f'{file_name}').stat().st_size
-        #fragmenta arquivo maior que 1024 bytes
+        #condição para arquivos maiores que 1kb
         if size > 1024:
+            #variável que controla a quantidade de partições
             slice = 0
+            #cria um arquivo .txt
             with open(f'{file_name}', 'r') as file:
+                #lê 1kb do arquivo
                 kbyte = file.read(1024)
                 #loop que cria vários arquivos com 1024 bytes no máximo
                 while kbyte:
@@ -113,38 +118,33 @@ class UDPClient: #criando a classe do cliente
                     frag_file = open(new_file, 'w')
                     frag_file.write(kbyte)
                     frag_file.close()
-
-                    self.socket.sendto(new_file, (self.host, self.port))
-                    new_file.unlink()
-                
+                    #envia arquivos para o servirdor
+                    self.socket.sendto(new_file.encode(), (self.host, self.port))
+                    #deleta arquivo
+                    #new_file.unlink()
+                    #lê o proximo kb do arquivo
                     kbyte = file.read(1024)
                     slice += 1
-                #envia arquivo pro servidor
-                ###incluir classe e modulo do server###
                 
-            #informa o termino de envio da mensagem
+            #informa o término de envio da mensagem
             text = open("end_file.txt", 'w')
             text.write("finish")
             text.close()
-            ###incluir classe e modulo do server###
-            self.socket.sendto(text, (self.host, self.port))
-            text.unlink()
+            #envia o arquivo de término para o servidor
+            self.socket.sendto("end_file.txt".encode(), (self.host, self.port))
+            #text.unlink()
             
         else:
             #envia arquivo pro servidor
-            self.socket.sendto(file, (self.host, self.port))
-            ###incluir classe e modulo do server###
-            
+            self.socket.sendto(f'{file}'.encode(), (self.host, self.port))
             #informa o termino de envio da mensagem
             text = open("end_file.txt", 'w')
             text.write("finish")
             text.close()
-            ###incluir classe e modulo do server###
-
-            self.socket.sendto(text, (self.host, self.port))
-            text.unlink()
+            #envia arquivo para o servidor
+            self.socket.sendto("end_file.txt".encode(), (self.host, self.port))
+            #text.unlink()
             
-
     #modulo recursivo que reconstroi mensagens
     def message_defrag(self, partial_message, message):
         #lê a mensagem recebida
@@ -155,9 +155,10 @@ class UDPClient: #criando a classe do cliente
         #se não for, concatena o resto da mensagem, pede a próxima parte da mensagem e chama mais uma vez
         else:
             text = partial_message + text
-            message.unlink()
+            #message.unlink()
+            #recebe o arquivo do servidor
             data, _ = self.socket.recvfrom(self.buffer_size)
-            self.message_defrag(text, data)
+            self.message_defrag(text, data.decode())
 
 #inicia o chat
 if __name__ == "__main__":
