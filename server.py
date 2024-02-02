@@ -1,6 +1,7 @@
 import socket
 import threading
 import queue
+from pathlib import Path
 
 class UDPServer:
 
@@ -9,7 +10,6 @@ class UDPServer:
         self.port = port
         self.clients = set()
         self.nicknames = {}
-        self.fragmented_messages = {}
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.host, self.port))
         print('Aguardando conexão de um cliente')
@@ -22,35 +22,32 @@ class UDPServer:
                 if address not in self.clients:
                     self.clients.add(address)
                     print(f'Conexão estabelecida com {address}')
-                    self.socket.sendto(f"{self.host}/{self.port}".encode('utf-8'), address)
+                    self.socket.sendto(f"{address[0]}/{address[1]}".encode('utf-8'), address)
 
                 try:
-                    decoded_message = message.decode('utf-8')
+                    decoded_message = message.decode()
 
-                    if 'hi, meu nome eh:' in decoded_message:
-                        nickname = decoded_message.split(':', 1)[1].strip()
+                    if decoded_message.startswith("hi, meu nome eh "):
+                        nickname = decoded_message[16:]
                         self.nicknames[address] = nickname
-                        print(f'O nome de usuário do cliente {address} é {nickname}')
-                        self.socket.sendto('Você está conectado!'.encode('utf-8'), address)
-                        self.send_to_all(f'{nickname} entrou no chat!'.encode('utf-8'))
-
                     else:
-                        sender_nickname = self.nicknames.get(address)
-                        if sender_nickname not in self.fragmented_messages:
-                            self.fragmented_messages[sender_nickname] = []
-
-                        if decoded_message == "finish": #final da mensagem fragmentada
-                            complete_message = ''.join(self.fragmented_messages[sender_nickname])
-                            self.fragmented_messages[sender_nickname] = []
-                            self.send_to_all(f"{sender_nickname}: {complete_message}")
+                        if decoded_message == "bye":
+                            nickname = self.nicknames.get(address, address)
+                            print(f'{nickname} saiu do servidor.')
+                            self.send_to_all(f'{nickname} saiu do chat!')
+                            self.clients.remove(address)
                         else:
-                            self.fragmented_messages[sender_nickname].append(decoded_message)
+                            client_address = (address[0], address[1])  # Obtenha o endereço completo do cliente
+                            client_nickname = self.nicknames.get(client_address)  # Obtenha o apelido do cliente
+                            self.send_to_all(decoded_message)
+                        
+                except UnicodeDecodeError:
+                    # Se a mensagem não puder ser decodificada, ela é tratada como um arquivo
+                    self.send_to_all(message)
                 except:
-                    client_address = (address[0], address[1])  # Obtenha o endereço completo do cliente
-                    client_nickname = self.nicknames.get(client_address)  # Obtenha o apelido do cliente
-                    self.clients.remove(client_address)
-                    del self.nicknames[client_address]
-                    self.socket.sendto(f'{client_nickname} saiu da sala!'.encode('utf-8'), address)
+                    pass
+
+
 
     def receive(self):
         while True:
@@ -59,7 +56,7 @@ class UDPServer:
                 if message:
                     self.messages.put((message, address))
             except Exception as e:
-                print(f"erro em receive: {e}")
+                pass
 
     def send_to_all(self, message):
         for client in self.clients:
