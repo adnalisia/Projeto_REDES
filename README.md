@@ -13,12 +13,12 @@ linha de comando no terminal de cada um dos clientes conectados à sala.
 
 ### Bibliotecas utilizadas
 - **socket**
-Permite com que cada computador possa realizar diversas operações de comunicação, sem que uma interfira na outra.
+-Permite com que cada computador possa realizar diversas operações de comunicação, sem que uma interfira na outra.
 - **threading**
-Permite a criação, inicialização e gerenciamento de threads dentro do programa.
+-Permite a criação, inicialização e gerenciamento de threads dentro do programa.
 - **datetime**
-Permite a utilização e manipulação da hora e data do computador.
+-Permite a utilização e manipulação da hora e data do computador.
 - **pathlib**
-Permite a verificação do tamanho em bytes do arquivo.
+-Permite a verificação do tamanho em bytes do arquivo.
 - **random**
-Permite a criação de números aleátorios.
+-Permite a criação de números aleátorios.
