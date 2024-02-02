@@ -46,7 +46,7 @@ class UDPClient: #criando a classe do cliente
         thread.start()
 
     #função para tratar as mensagens seguintes:
-    def message_treatment(self,initial_message):
+    def message_treatment(self, initial_message):
         #variável com o tempo e a hora exata
         now = datetime.now() 
         #cria um timestamp pra ser usado no cabeçalho da mensagem e no titulo dos arquivos fragmentados
@@ -87,7 +87,7 @@ class UDPClient: #criando a classe do cliente
                 #manda a mensagem pro modulo de reconstrução
                 message = self.message_defrag('',data.decode()) 
                 #printa a mensagem na tela
-                print(message) 
+                print(message[:-6])
 
         except Exception as e:
             print(f"Error in receive_messages: {e}")
@@ -106,45 +106,26 @@ class UDPClient: #criando a classe do cliente
         size = Path(f'{file_name}').stat().st_size
         #condição para arquivos maiores que 1kb
         if size > 1024:
-            #variável que controla a quantidade de partições
-            slice = 0
             #cria um arquivo .txt
             with open(f'{file_name}', 'r') as file:
                 #lê 1kb do arquivo
                 kbyte = file.read(1024)
                 #loop que cria vários arquivos com 1024 bytes no máximo
                 while kbyte:
-                    new_file = f"{file_name}{str(slice)}.txt"
-                    frag_file = open(new_file, 'w')
-                    frag_file.write(kbyte)
-                    frag_file.close()
                     #envia arquivos para o servirdor
-                    self.socket.sendto(new_file.encode(), (self.host, self.port))
-                    #deleta arquivo
-                    #new_file.unlink()
+                    self.socket.sendto(kbyte.encode(), (self.host, self.port))
                     #lê o proximo kb do arquivo
                     kbyte = file.read(1024)
-                    slice += 1
                 
-            #informa o término de envio da mensagem
-            text = open("end_file.txt", 'w')
-            text.write("finish")
-            text.close()
-            #envia o arquivo de término para o servidor
-            self.socket.sendto("end_file.txt".encode(), (self.host, self.port))
-            #text.unlink()
+            #envia mensagem de término para o servidor
+            self.socket.sendto("finish".encode(), (self.host, self.port))
             
         else:
             #envia arquivo pro servidor
-            self.socket.sendto(f'{file}'.encode(), (self.host, self.port))
-            #informa o termino de envio da mensagem
-            text = open("end_file.txt", 'w')
-            text.write("finish")
-            text.close()
-            #envia arquivo para o servidor
-            self.socket.sendto("end_file.txt".encode(), (self.host, self.port))
-            #text.unlink()
-            
+            self.socket.sendto(segment.encode(), (self.host, self.port))
+            #envia mensagem de término para o servidor
+            self.socket.sendto("finish".encode(), (self.host, self.port))
+   
     #modulo recursivo que reconstroi mensagens
     def message_defrag(self, partial_message, message):
         #lê a mensagem recebida
@@ -155,7 +136,6 @@ class UDPClient: #criando a classe do cliente
         #se não for, concatena o resto da mensagem, pede a próxima parte da mensagem e chama mais uma vez
         else:
             text = partial_message + text
-            #message.unlink()
             #recebe o arquivo do servidor
             data, _ = self.socket.recvfrom(self.buffer_size)
             self.message_defrag(text, data.decode())
