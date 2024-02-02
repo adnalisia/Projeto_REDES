@@ -14,7 +14,7 @@ linha de comando no terminal de cada um dos clientes conectados à sala.
 4. Inicie **primeiro** o arquivo com nome server.py.
 5. Abra um novo terminal para iniciar o arquivo client.py.
 
-**OBS: para criar uma sala com mais de um usuário, siga o passo 4 e abra dois terminais iniciando o arquivo client.py em cada terminal criado.**
+**OBS: para criar uma sala com mais de um usuário, siga o passo 4 e abra dois ou mais terminais iniciando o arquivo client.py em cada terminal criado.**
 
 ### Bibliotecas utilizadas
 - **socket**
