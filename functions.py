@@ -71,10 +71,8 @@ def rdt_rcv():
     sum = int(bin(cks+rcvpkt[2]))
     #checa o checksum
     if sum == 0:
-        #envia o ack pois se deu 0 é tudo certo
-        rdt_send('ACK', seqnumb, sender)
+        #envia os dados e o ack
+        return data, seqnumb, sender, 'ACK'
     else:
-        #envia o nak pois se deu 1 é tudo errado
-        rdt_send('NAK', seqnumb, sender)
-    #envia de volta os dados e o seqnumb
-    return data, seqnumb
+        #envia os dados e o nak
+        return data, seqnumb, sender, 'NAK'
