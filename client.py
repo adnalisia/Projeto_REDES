@@ -12,16 +12,13 @@ class UDPClient:  # criando a classe do cliente
     def __init__(self, host, port):
         self.host = host  # host do servidor
         self.port = port  # porta do servidor
-        self.client_IP = "localhost"  # ip do cliente
-        self.client_port = 4455  # servidor do cliente
+        self.client_IP = None # ip do cliente
+        self.client_port = None  # porta do cliente
         self.nickname = None  # nome do cliente
         self.connection_flag = False  # flag que indica se a conexão esta aberta
         self.buffer_size = 1024  # tamanho do meu buffer
         self.socket = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM)  # criando um socket udp
-        self.socket.settimeout(1.0)  # setando temporizador
-        self.start_time = None
-        self.end_time = None
         self.seqnumber = 0
         self.seqnmbrcv = 0
 
