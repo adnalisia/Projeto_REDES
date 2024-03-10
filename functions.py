@@ -1,5 +1,4 @@
 import socket
-import time
 
 # Calcula complemento de 1
 def complement(n, size):
@@ -7,8 +6,8 @@ def complement(n, size):
     return '0b{0:0{1}b}'.format(comp, size)
 
 # Soma de verificação
-def checksum(origin_port, destiny_port, size):
-    first_sum = bin(origin_port+destiny_port)[2:].zfill(16)
+def checksum(data, size):
+    first_sum = bin(data)[2:].zfill(16)
     if (len(first_sum) > 16):
         first_sum = first_sum[1:17]
         first_sum = bin(int(first_sum, 2) + 1)[2:].zfill(16)
@@ -21,19 +20,23 @@ def checksum(origin_port, destiny_port, size):
 
 
 #função de enviar
-def rdt_send(data, id, receiver):
-    cks = checksum(data)
-    sndpkt = [id, data.encode(),cks]
+def rdt_send(data, seqnumb, receiver):
+    data = data.encode()
+    #primeiro fazendo o checksum dos dados
+    cks = checksum(data, len(data))
+    #criamos o pacot com o id, os dados e o checksum
+    sndpkt = [seqnumb, data, cks]
+    #envia o pacote pro destinatario
     socket.sendto(sndpkt, receiver)
-    socket.settimeout(1)
-    try:
-        rdt_rcv(rcvpkt, receiver)
-        if rcvpkt[1] == 'NAK':
-            rdt_send(data,receiver)
-    except socket.timeout:
-        rdt_send(data, receiver)
 
 
 #função de receber
-def rdt_rcv(data)
-
+def rdt_rcv():
+    rcvpkt, sender = socket.recvfrom(1024)
+    seqnumb = rcvpkt[0]
+    data = rcvpkt[1]
+    cks = checksum(data)
+    if cks == rcvpkt[2]:
+        rdt_send('ACK', seqnumb, sender)
+    else:
+        rdt_send('NAK', seqnumb, sender)
