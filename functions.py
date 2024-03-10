@@ -1,39 +1,16 @@
 import socket
 
-# Calcula complemento de 1
-def complement(n, size):
-    comp = n ^ ((1 << size) - 1)
-    return '0b{0:0{1}b}'.format(comp, size)
+# Função checksum
 
-'''
-# Soma de verificação
-def checksum(data, size):
-    first_sum = bin(data)[2:].zfill(16)
-    if (len(first_sum) > 16):
-        first_sum = first_sum[1:17]
-        first_sum = bin(int(first_sum, 2) + 1)[2:].zfill(16)
-    second_sum = bin(int(first_sum, 2)+size)[2:].zfill(16)
-    if (len(second_sum) > 16):
-        second_sum = second_sum[1:17]
-        second_sum = bin(int(second_sum, 2) + 1)[2:].zfill(16)
-    checksum = complement(int(second_sum, 2), 16)[2:]
-    return int(checksum, 2)
-'''
-# Função que transforma bytes em bits
-def bytes_to_bits(data):
+def checksum(data):
+    # Transforma bytes em bits
     message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
-    return message_bits
-
-# Checksum bom
-
-def checksum(data, size):
-    bits = bytes_to_bits(data)
     # Dividindo em 8 bits
     bytes_parts_list = []   # cria uma lista para as partes em 8 bits
     part_lenght = 8
     # Loop para dividir a mensagem em partes de 8 bits
-    while bits:
-        byte_part = bits[0:part_lenght]
+    while message_bits:
+        byte_part = message_bits[0:part_lenght]
         # Adiciona as partes na lista
         bytes_parts_list.append(byte_part)
 
@@ -53,7 +30,8 @@ def checksum(data, size):
     if len(bits_sum) < part_lenght:
         new_sum = '0' * (part_lenght - len(bits_sum)) + bits_sum
 
-    complement(new_sum)
+    final_checksum = complement_1(new_sum)
+    return final_checksum
 
 # Calculando o complemento de 1
 def complement_1(new_sum):
