@@ -20,14 +20,15 @@ def checksum(data, size):
 
 
 #função de enviar
-def rdt_send(data, seqnumb, receiver):
+def rdt_send(data, seqnumb):
     data = data.encode()
     #primeiro fazendo o checksum dos dados
     cks = checksum(data, len(data))
+    #chamar a função do complemento a dois
+    cpmt2 = complement(cks)
     #criamos o pacot com o id, os dados e o checksum
-    sndpkt = [seqnumb, data, cks]
-    #envia o pacote pro destinatario
-    socket.sendto(sndpkt, receiver)
+    sndpkt = [seqnumb, data, cpmt2]
+    return sndpkt
 
 
 #função de receber
@@ -36,7 +37,9 @@ def rdt_rcv():
     seqnumb = rcvpkt[0]
     data = rcvpkt[1]
     cks = checksum(data)
-    if cks == rcvpkt[2]:
+    sum = int(bin(cks+rcvpkt[2]))
+    if sum == 0:
         rdt_send('ACK', seqnumb, sender)
     else:
         rdt_send('NAK', seqnumb, sender)
+    return data, seqnumb

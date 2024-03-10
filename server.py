@@ -3,11 +3,8 @@ import sys
 import threading
 import queue
 from pathlib import Path
-<<<<<<< HEAD
-=======
 import functions
 
->>>>>>> 2d2f6cf8b75925e472dbcc0bcccf09d50934c8de
 
 class UDPServer:
 
@@ -34,31 +31,6 @@ class UDPServer:
                 if address not in self.clients:
                     self.clients.add(address)
                     print(f'Conexão estabelecida com {address}')
-<<<<<<< HEAD
-                    self.socket.sendto(f"{address[0]}/{address[1]}".encode('utf-8'), address)
-
-                try:
-                    decoded_message = message.decode()
-                    teste = Path(decoded_message)
-
-                    if teste.is_file() != True:
-                        if decoded_message[:16] == "hi, meu nome eh ":
-                            nickname = decoded_message[16:]
-                            self.nicknames[address] = nickname
-                        else:
-                            #REMOVER CLIENTE DA LISTA
-                            client_address = (address[0], address[1])  # Obtenha o endereço completo do cliente
-                            client_nickname = self.nicknames.get(client_address)  # Obtenha o apelido do cliente
-                            self.clients.remove(client_address)
-                            del self.nicknames[client_address]
-                            self.send_to_all(f'{client_nickname} saiu da sala!'.encode('utf-8'))
-                            
-                    else:
-                        self.send_to_all(decoded_message)
-                except:
-                    pass
-
-=======
                     self.socket.sendto(
                         f"{address[0]}/{address[1]}".encode('utf-8'), address)
 
@@ -86,7 +58,6 @@ class UDPServer:
                     self.send_to_all(message)
                 except:
                     pass
->>>>>>> 2d2f6cf8b75925e472dbcc0bcccf09d50934c8de
 
     def receive(self):
         while True:
