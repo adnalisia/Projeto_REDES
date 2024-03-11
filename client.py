@@ -10,12 +10,10 @@ class UDPClient:  # criando a classe do cliente
 
     def __init__(self, host, port):
         self.hostaddress = (host , port)
-        self.client_IP = None # ip do cliente
-        self.client_port = None  # porta do cliente
         self.nickname = None  # nome do cliente
-        self.buffer_size = 1024  # tamanho do meu buffer
-        self.socket = socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM)  # criando um socket udp
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)# criando um socket udp
+        self.client_IP = None
+        self.client_port = None # endereço do cliente  
         self.seqnumber = 0
         self.lastack = 0
         self.ack = threading.Condition()
@@ -28,7 +26,6 @@ class UDPClient:  # criando a classe do cliente
     def start(self):
         # primeiro cria-se um while para receber o input que conecta ao servidor
         while True:
-            self.threads_rcv()
             # pedindo o comando inicial
             starter_input = input(
                 "Digite 'hi, meu nome eh' e seu nome para se conectar ao chat:")
@@ -50,7 +47,8 @@ class UDPClient:  # criando a classe do cliente
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
         #envia a mensagem de iniciar
-        self.sndpkt('connected')
+        self.socket.connect(self.hostaddress)
+        self.threads_rcv()
         #começa o timer
         self.socket.settimeout(1.0)
         try:
@@ -67,7 +65,6 @@ class UDPClient:  # criando a classe do cliente
                     #se for cria a thread
                     self.connected = True
                     self.message_fragment(hello_message)
-                    self.socket.connect(self.address)
                     return self.socket
             #se ta corrompido, envia msg de conexão de novo
             else:
@@ -80,6 +77,8 @@ class UDPClient:  # criando a classe do cliente
     def threads_rcv(self):
         thread1 = threading.Thread(target=self.waitack())
         thread2 = threading.Thread(target=self.rcvmessages())
+        thread3 = threading.Thread(target=self.start())
+        thread3.start()
         thread1.start()
         thread2.start()
 
@@ -138,6 +137,7 @@ class UDPClient:  # criando a classe do cliente
                         address = rcvpkt.split('/')
                         self.client_IP = address[0]
                         self.client_port = address[1]
+                        self.socket.bind(self.myaddress)
                 #se a mensagem for qualquer outra
                 elif self.connected:
                     if seqnumb != self.seqnumber: 
@@ -203,7 +203,7 @@ class UDPClient:  # criando a classe do cliente
     def sndpkt(self, data):
         # envia arquivos para o servirdor
         sndpkt = functions.make_pkt(data, self.seqnumber)
-        self.socket.sendto(sndpkt.encode(), self.hostaddress)
+        self.socket.send(sndpkt.encode())
         self.socket.settimeout(1.0)
         self.ackok = False
         #tentar receber o ack
