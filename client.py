@@ -104,14 +104,14 @@ class UDPClient:  # criando a classe do cliente
             #vê se a mensagem não ta corrompida
             if state == 'ACK':
                 #se a mensagem for um ack
-                if message.decode() == 'ACK':
+                if message == 'ACK':
                     self.lastack = seqnumb
                     self.ackok = True
                     with self.ack:
                         self.ackflag = True
                         self.ack.notify()
                 #se a mensagem for um synack
-                elif message.decode() == 'SYNACK':
+                elif message == 'SYNACK':
                     self.lastack = seqnumb
                     self.connected = True
                     self.ackok = True
@@ -120,20 +120,20 @@ class UDPClient:  # criando a classe do cliente
                         self.synack = True
                         self.ack.notify()
                 #se a mensagem for um NAK
-                elif message.decode() == 'NAK':
+                elif message == 'NAK':
                     with self.ack:
                         self.ackflag = True
                         self.ack.notify()
                 #se a mensagem for um finak e ai encerra a conexão
-                elif message.decode() == 'FINAK':
+                elif message == 'FINAK':
                     self.connected = False
                     with self.ack:
                         self.ackflag = True
                         self.ack.notify()
                     self.socket.close()
-                elif message.decode().startswith('IP.PORT'):
+                elif message.startswith('IP.PORT'):
                     if seqnumb != self.seqnumber:
-                        rcvpkt = message.decode().split(',')
+                        rcvpkt = message.split(',')
                         address = rcvpkt.split('/')
                         self.client_IP = address[0]
                         self.client_port = address[1]
@@ -204,7 +204,7 @@ class UDPClient:  # criando a classe do cliente
         # envia arquivos para o servirdor
         sndpkt = functions.make_pkt(data, self.seqnumber)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
-        self.socket.settimeout(1.0)
+        self.socket.settimeout(0.01)
         self.ackok = False
         #tentar receber o ack
         try:
@@ -213,7 +213,8 @@ class UDPClient:  # criando a classe do cliente
                 self.sndpkt(data)
         #caso dê timeout
         except socket.timeout:
-            self.sndpkt(data)
+            print('DEU TIMEOUT')
+            print(data)
     
     #função para esperar o ack
     def waitack(self):

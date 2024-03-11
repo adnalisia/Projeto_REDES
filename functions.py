@@ -1,9 +1,9 @@
-import socket
+import binascii
 
 # Função checksum
 def checksum(data):
     # Transforma bytes em bits
-    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
+    message_bits = format(data[0], 'b')
     # Dividindo em 8 bits
     bytes_parts_list = []    # cria uma lista para as partes em 8 bits
     part_lenght = 8
@@ -51,11 +51,11 @@ def complement_1(new_sum):
 
 #função de enviar
 def make_pkt(data, seqnumb):
-    data = data.encode()
+    byte = data.encode()
     #primeiro fazendo o checksum dos dados
-    cks = checksum(data)
+    cks = checksum(byte)
     #criamos o pacote com o id, os dados e o checksum
-    pkt = [seqnumb, data, cks]
+    pkt = [data, seqnumb, cks]
     sndpkt = str(pkt)
     return sndpkt
 
