@@ -1,9 +1,14 @@
 import socket
 
+# Função para transformar bytes em bits
+def bytes_to_bits(data):
+    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
+    return message_bits
+
 # Função checksum
 def checksum(data):
     # Transforma bytes em bits
-    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
+    message_bits = bytes_to_bits(data)
     # Dividindo em 8 bits
     bytes_parts_list = []    # cria uma lista para as partes em 8 bits
     part_lenght = 8
@@ -49,7 +54,7 @@ def complement_1(new_sum):
     return the_checksum
 
 #função de enviar
-def rdt_send(data, seqnumb):
+def make_pkt(data, seqnumb):
     data = data.encode()
     #primeiro fazendo o checksum dos dados
     cks = checksum(data)
@@ -61,7 +66,7 @@ def rdt_send(data, seqnumb):
     return sndpkt
 
 #função de receber
-def rdt_rcv(rcvpkt):
+def open_pkt(rcvpkt):
     #recebe o pacote encapsulado com mensagem, numéro sequencial e checksum
     rcvpkt = eval(rcvpkt)
     #cria a variavel para os dados
