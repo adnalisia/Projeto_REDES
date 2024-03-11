@@ -61,7 +61,7 @@ class UDPClient:  # criando a classe do cliente
             else:
                 self.threeway_handshake(hello_message)
         #se der timeout tenta estabelecer a conexão de novo
-        except socket.timeout:
+        except self.socket.timeout:
             self.threeway_handshake(hello_message)
 
     # função para conectar o cliente ao chat de mensagens:
@@ -222,7 +222,7 @@ class UDPClient:  # criando a classe do cliente
             else:
                 self.sndpkt(data)
         #caso seja
-        except socket.timeout:
+        except self.socket.timeout:
             self.sndpkt(data)
 
 # inicia o chat

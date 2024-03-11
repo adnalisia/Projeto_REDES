@@ -89,10 +89,10 @@ class UDPServer:
         # envia arquivos para o servirdor
         sndpkt = functions.rdt_send(data, self.seqnumber[client])
         self.socket.sendto(sndpkt.encode(), client)
-        socket.settimeout(1.0)
+        self.socket.settimeout(1.0)
         #tentar receber o ack
         try:
-            infoconf, _, _, state = socket.recvfrom(1024)
+            infoconf, _, _, state = self.socket.recvfrom(1024)
             #checa se o ack ta ok
             if state == 'ACK':
                 #caso a mensagem enviada esteja corrompido
@@ -105,7 +105,7 @@ class UDPServer:
             else:
                 self.sndpkt(data, client)
         #caso seja
-        except socket.timeout:
+        except self.socket.timeout:
             self.sndpkt(data, client)
 
     def start(self):
