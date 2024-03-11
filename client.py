@@ -40,54 +40,56 @@ class UDPClient:  # criando a classe do cliente
                 self.threeway_handshake(starter_input)
                 # aqui ele corta o input inicial para pegar apenas o nome do usuário e aplicar
                 self.nickname = starter_input[16:]
+                while self.connected:
+                    message = input()
+                    self.message_fragment(message)    
             else:
                 print(
                     "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
         # conectando o cliente ao chat de mensagens:
+            
     
     
     # função para trata mensagens recebidas
     def rcvmsgtreat(self, message, seqnumb):
-        if not self.connected:
-            #se a mensagem for um ack
-            if message.decode() == 'ACK':
-                self.lastack = seqnumb
-                self.ackok = True
-                with self.ack:
-                    self.ackflag = True
-                    self.ack.notify()
-            #se a mensagem for um synack
-            elif message.decode() == 'SYNACK':
-                self.lastack = seqnumb
-                self.ackok = True
-                with self.ack:
-                    self.ackflag = True
-                    self.synack = True
-                    self.ack.notify()
-            #se a mensagem for um NAK
-            elif message.decode() == 'NAK':
-                with self.ack:
-                    self.ackflag = True
-                    self.ack.notify()
-            #se a mensagem for um finak e ai encerra a conexão
-            elif message.decode() == 'FINAK':
-                with self.ack:
-                    self.ackflag = True
-                    self.ack.notify()
-                self.socket.close()
-            #se a mensagem for qualquer outra
-        else:
+        #se a mensagem for um ack
+        if message.decode() == 'ACK':
+            self.lastack = seqnumb
+            self.ackok = True
+            with self.ack:
+                self.ackflag = True
+                self.ack.notify()
+        #se a mensagem for um synack
+        elif message.decode() == 'SYNACK':
+            self.lastack = seqnumb
+            self.connected = True
+            self.ackok = True
+            with self.ack:
+                self.ackflag = True
+                self.synack = True
+                self.ack.notify()
+        #se a mensagem for um NAK
+        elif message.decode() == 'NAK':
+            with self.ack:
+                self.ackflag = True
+                self.ack.notify()
+         #se a mensagem for um finak e ai encerra a conexão
+        elif message.decode() == 'FINAK':
+            self.connected = False
+            with self.ack:
+                self.ackflag = True
+                self.ack.notify()
+            self.socket.close()
+        #se a mensagem for qualquer outra
+        elif self.connected:
             if seqnumb != self.seqnumber: 
                 self.message_defrag(message)
                 self.sndpkt('ACK')
 
-
-        
-
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
         #envia a mensagem de iniciar
-        self.sndpkt(hello_message)
+        self.sndpkt('connected')
         #começa o timer
         self.socket.settimeout(1.0)
         try:
@@ -103,7 +105,10 @@ class UDPClient:  # criando a classe do cliente
                 else:
                     #se for cria a thread
                     self.connected = True
+                    (self.client_IP, self.client_port) = self.socket.getsockname()
                     self.socket.connect(self.hostaddress)
+                    self.message_fragment(hello_message)
+            #se ta corrompido, envia msg de conexão de novo
             else:
                 self.threeway_handshake(hello_message)
         #se der timeout tenta estabelecer a conexão de novo

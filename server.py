@@ -25,57 +25,56 @@ class UDPServer:
             while not self.messages.empty():
                 #desempacota a tupla que contém mensagem e endereço que está na fila de mensagem
                 message, address, seqnumb = self.messages.get()
-
-                if address not in self.clients: #se o endereço não estiver na lista de clientes
+                decoded_message = message.decode() #decodifica mensagem
+                if decoded_message == 'connected': #se o endereço não estiver na lista de clientes
                     self.clients.add(address) #adiciona na lista de endereços
                     print(f'Conexão estabelecida com {address}')
                     self.sndpkt('SYNACK', address) #envia pacote de estabelecimento de conexão
-
-                try:
-                    decoded_message = message.decode() #decodifica mensagem
-                    #se cliente estiver se conectando com servidor
-                    if decoded_message.startswith("hi, meu nome eh "):
-                        nickname = decoded_message[16:]
-                        #adiciona nickname ao dicionário de nicknames com a chave sendo o address
-                        self.nicknames[address] = nickname
-                        self.send_to_all(decoded_message)
-                        self.sndpkt('ACK', address)
-                    else:
-                        if decoded_message == "bye":
-                            nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
-                            print(f'{nickname} saiu do servidor.') #print no terminal do servidor
-                            self.send_to_all(f'{nickname} saiu do chat!') #envia mensagem para todos os clientes informando que cliente saiu
-                            self.removeclient(address)
-                            self.sndpkt('FINACK', address)
-                        #caso a mensagem recebida seja um ACK
-                        elif decoded_message == 'ACK':
-                            with self.ack:
-                                #atualiza o ultimo seqnumb
-                                self.lastack[address] = seqnumb
-                                #coloca que a ultima mensagem recebida foi validada
-                                self.acktrue = True
-                                #muda a flag de ack pra avisar que recebeu o ack
-                                self.ackflag = True
-                                #avisa ao waitack pra continuar
-                                self.ack.notify()
-                        #caso a mensagem recebida seja um nak
-                        elif decoded_message == 'NAK':
-                            with self.ack:
-                                #coloca que a ultima mensagem recebida não foi validada
-                                self.acktrue = False
-                                #muda a flag de ack pra avisar que recebeu o ack
-                                self.ackflag = True
-                                #avisa ao waitack pra continuar
-                                self.ack.notify()
-                        else: #se for uma mensagem normal para enviar
-                            #envia o ack
-                            self.sndpkt('ACK', address)                            
-                            #atualiza o ultimo seqnumb recebido
-                            self.seqnumber[address] = seqnumb
-                            #envia a mensagem para todos
+                else:
+                    try:
+                        #se cliente estiver se conectando com servidor
+                        if decoded_message.startswith("hi, meu nome eh "):
+                            nickname = decoded_message[16:]
+                            #adiciona nickname ao dicionário de nicknames com a chave sendo o address
+                            self.nicknames[address] = nickname
                             self.send_to_all(decoded_message)
-                except:
-                    pass
+                            self.sndpkt('ACK', address)
+                        else:
+                            if decoded_message == "bye":
+                                nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
+                                print(f'{nickname} saiu do servidor.') #print no terminal do servidor
+                                self.send_to_all(f'{nickname} saiu do chat!') #envia mensagem para todos os clientes informando que cliente saiu
+                                self.removeclient(address)
+                                self.sndpkt('FINACK', address)
+                            #caso a mensagem recebida seja um ACK
+                            elif decoded_message == 'ACK':
+                                with self.ack:
+                                    #atualiza o ultimo seqnumb
+                                    self.lastack[address] = seqnumb
+                                    #coloca que a ultima mensagem recebida foi validada
+                                    self.acktrue = True
+                                    #muda a flag de ack pra avisar que recebeu o ack
+                                    self.ackflag = True
+                                    #avisa ao waitack pra continuar
+                                    self.ack.notify()
+                            #caso a mensagem recebida seja um nak
+                            elif decoded_message == 'NAK':
+                                with self.ack:
+                                    #coloca que a ultima mensagem recebida não foi validada
+                                    self.acktrue = False
+                                    #muda a flag de ack pra avisar que recebeu o ack
+                                    self.ackflag = True
+                                    #avisa ao waitack pra continuar
+                                    self.ack.notify()
+                            else: #se for uma mensagem normal para enviar
+                                #envia o ack
+                                self.sndpkt('ACK', address)                            
+                                #atualiza o ultimo seqnumb recebido
+                                self.seqnumber[address] = seqnumb
+                                #envia a mensagem para todos
+                                self.send_to_all(decoded_message)
+                    except:
+                        pass
             
 
     
