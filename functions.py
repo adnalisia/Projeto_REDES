@@ -3,14 +3,14 @@ import socket
 # Função checksum
 def checksum(data):
     # Transforma bytes em bits
-    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
+    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]  
     # Dividindo em 8 bits
     bytes_parts_list = []    # cria uma lista para as partes em 8 bits
-    part_lenght = 8
+    part_length = 8
     j = 8
     i = 0
     # Loop para dividir a mensagem em partes de 8 bits
-    while j < len(message_bits) :
+    while i <= len(message_bits):
         byte_part = message_bits[i:j]
         i = j
         j = j + 8
@@ -20,30 +20,27 @@ def checksum(data):
     # Soma as partes
     bits_sum = '00000000'
     for bit_part in bytes_parts_list:
-        # soma cada parte com a seguinte
+        # soma cada parte com a soma acumulada
         bits_sum = bin(int(bits_sum, 2) + int(bit_part, 2))[2:]
 
     # Adicionando o overflow
-    if len(bits_sum) > part_lenght:
+    if len(bits_sum) > part_length:
         # Calcula os bits overflow
-        exceed = len(bits_sum) - part_lenght
+        exceed = len(bits_sum) - part_length
         # Soma os bits overflow ao resultado sem o overflow
-        new_sum = bin(int(bits_sum[0:exceed], 2)+int(bits_sum[exceed:], 2))[2:]
+        bits_sum = bin(int(bits_sum[exceed:], 2) + int(bits_sum[:exceed], 2))[2:]
+
     # Adiciona zeros à esquerda em caso de soma menor que 8 bits
-    if len(bits_sum) < part_lenght:
-        new_sum = '0' * (part_lenght - len(bits_sum)) + bits_sum
-    # Caso a soma tenha 8 bits
-    else:
-        new_sum = bits_sum
-        
-    final_checksum = complement_1(new_sum)
+    if len(bits_sum) < part_length:
+        bits_sum = '0' * (part_length - len(bits_sum)) + bits_sum
+
+    final_checksum = complement_1(bits_sum)
     return final_checksum
 
 # Calculando o complemento de 1
-def complement_1(new_sum):
-  #  print(new_sum)
+def complement_1(bits_sum):
     the_checksum = ''
-    for bit in new_sum:
+    for bit in bits_sum:
         # Troca os 1 por 0
         if bit == '1':
             the_checksum += '0'
