@@ -5,8 +5,8 @@ def checksum(data):
     # Transforma bytes em bits
     message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
     # Dividindo em 8 bits
-    bytes_parts_list = []
-    part_lenght = 8   # cria uma lista para as partes em 8 bits
+    bytes_parts_list = []    # cria uma lista para as partes em 8 bits
+    part_lenght = 8
     j = 8
     i = 0
     # Loop para dividir a mensagem em partes de 8 bits
@@ -46,42 +46,37 @@ def complement_1(new_sum):
         # Troca os 0 por 1
         else:
             the_checksum += '1'
-    inteiro = int(the_checksum,2) + 1
-    the_checksum = format(inteiro, 'b')
     return the_checksum
 
-
 #função de enviar
-def rdt_send(data, seqnumb):
+def make_pkt(data, seqnumb):
     data = data.encode()
     #primeiro fazendo o checksum dos dados
     cks = checksum(data)
-    #chamar a função do complemento a dois
+    #chamar a função do complemento de 1
     cpmt1 = complement_1(cks)
-    #criamos o pacot com o id, os dados e o checksum
+    #criamos o pacote com o id, os dados e o checksum
     pkt = [seqnumb, data, cpmt1]
     sndpkt = str(pkt)
     return sndpkt
 
-
 #função de receber
-def rdt_rcv(rcvpkt):
+def open_pkt(rcvpkt):
+    #recebe o pacote encapsulado com mensagem, numéro sequencial e checksum
     rcvpkt = eval(rcvpkt)
-    #cria a variavel para o seqnumb
-    seqnumb = rcvpkt[0]
     #cria a variavel para os dados
-    data = rcvpkt[1]
-    #pega o valor da soma
-    cks = checksum(data)
+    data = rcvpkt[0]
+    #cria a variavel para o seqnumb
+    seqnumb = rcvpkt[1]
+    #checksum recebido com a mensagem
+    cks_rcv = rcvpkt[2]
     #faz o checksum
-    start_number = int(cks, 2) + int(rcvpkt[2], 2)
-    binary = bin(start_number)
-    i = len(binary) - 8
-    sum = binary[i:]
-    #checa o checksum
-    if sum == 0:
+    cks = checksum(data)
+    #compara o checksum recebido com o calculado
+    if str(cks) == str(cks_rcv):
         #envia os dados e o ack
         return data, seqnumb, 'ACK'
+    #caso os checksum's sejam diferentes
     else:
         #envia os dados e o nak
         return data, seqnumb, 'NAK'

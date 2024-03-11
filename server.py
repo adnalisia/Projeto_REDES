@@ -14,6 +14,7 @@ class UDPServer:
         self.seqnumber = {}
         self.lastack = {}
         self.acktrue = False
+        self.ackflag = False
         self.ack = threading.Ack()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.host, self.port))
@@ -39,8 +40,6 @@ class UDPServer:
                         self.nicknames[address] = nickname
                         self.send_to_all(decoded_message)
                         self.sndpkt('ACK', address)
-                        #envia para o cliente seu ip e porta (do cliente)
-                        self.sndpkt(f"{address[0]}/{address[1]}", address)
                     else:
                         if decoded_message == "bye":
                             nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
@@ -55,6 +54,8 @@ class UDPServer:
                                 self.lastack[address] = seqnumb
                                 #coloca que a ultima mensagem recebida foi validada
                                 self.acktrue = True
+                                #muda a flag de ack pra avisar que recebeu o ack
+                                self.ackflag = True
                                 #avisa ao waitack pra continuar
                                 self.ack.notify()
                         #caso a mensagem recebida seja um nak
@@ -62,9 +63,13 @@ class UDPServer:
                             with self.ack:
                                 #coloca que a ultima mensagem recebida não foi validada
                                 self.acktrue = False
+                                #muda a flag de ack pra avisar que recebeu o ack
+                                self.ackflag = True
                                 #avisa ao waitack pra continuar
                                 self.ack.notify()
                         else: #se for uma mensagem normal para enviar
+                            #envia o ack
+                            self.sndpkt('ACK', address)                            
                             #atualiza o ultimo seqnumb recebido
                             self.seqnumber[address] = seqnumb
                             #envia a mensagem para todos
@@ -83,7 +88,7 @@ class UDPServer:
         #chama a mensagem
         rcvpkt, address = self.socket.recvfrom(1024)
         #recebe a mensagem, seu numero de sequencia e estado
-        message, seqnumb, state = functions.rdt_rcv(rcvpkt.decode())
+        message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
         #vê se a mensagem não ta corrompida
         if state == 'ACK':
             #checa se o numero de sequencia da mensagem recebida é diferente da ultima, se for coloca a mensagem na fila
@@ -118,10 +123,11 @@ class UDPServer:
 
     #função de enviar
     def sndpkt(self, data, client):
+        self.ackflag = False
         #altera o seqnumb da ultima msg enviada
         self.seqnumber[client] = (self.seqnumber.get(client) +1)//2
         # cria o pacote
-        sndpkt = functions.rdt_send(data, self.seqnumber.get(client))
+        sndpkt = functions.make_pkt(data, self.seqnumber.get(client))
         #envia o pacote pro servidor
         self.socket.sendto(sndpkt.encode(), client)
         #inicia o time
@@ -138,7 +144,7 @@ class UDPServer:
     def waitack(self, data, client):
         with self.ack:
             #espera o recebimento de um ack
-            while not self.ack:
+            while not self.ackflag:
                 self.ack.wait()
             #se receber e for NAK
             if not self.acktrue:
