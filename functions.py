@@ -21,10 +21,10 @@ def checksum(data):
     for bit_part in bytes_parts_list:
         # soma cada parte com a seguinte
         bits_sum = bin(int(bit_part, 2))[2:]
-        return bits_sum
+        #return bits_sum
 
     # Adicionando o overflow
-    if len(bits_sum > part_lenght):
+    if len(bits_sum) > part_lenght:
         # Calcula os bits overflow
         exceed = len(bits_sum) - part_lenght
         # Soma os bits overflow ao resultado sem o overflow
@@ -75,10 +75,9 @@ def rdt_rcv(rcvpkt):
     cks = checksum(data)
     #faz o checksum
     start_number = int(cks, 2) + int(rcvpkt[2], 2)
-    i = len(start_number) - 8
     binary = bin(start_number)
-    new_string = binary[i:]
-    sum = bin(new_string)
+    i = len(binary) - 8
+    sum = binary[i:]
     #checa o checksum
     if sum == 0:
         #envia os dados e o ack
