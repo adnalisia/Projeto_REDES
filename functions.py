@@ -18,26 +18,27 @@ def checksum(data):
         bytes_parts_list.append(byte_part)
 
     # Soma as partes
+    bits_sum = '00000000'
     for bit_part in bytes_parts_list:
         # soma cada parte com a seguinte
-        bits_sum = bin(int(bit_part, 2))[2:]
-        #return bits_sum
+        bits_sum = bin(int(bits_sum, 2) + int(bit_part, 2))[2:]
 
     # Adicionando o overflow
     if len(bits_sum) > part_lenght:
         # Calcula os bits overflow
         exceed = len(bits_sum) - part_lenght
         # Soma os bits overflow ao resultado sem o overflow
-        new_sum = bin(int(bits_sum[0:exceed], 2)+int(bits_sum[exceed:], 2))[2:]
+        bits_sum = bin(int(bits_sum[0:exceed], 2)+int(bits_sum[exceed:], 2))[2:]
     # Adiciona zeros à esquerda em caso de soma menor que 8 bits
     if len(bits_sum) < part_lenght:
-        new_sum = '0' * (part_lenght - len(bits_sum)) + bits_sum
-
-    final_checksum = complement_1(new_sum)
+        bits_sum = '0' * (part_lenght - len(bits_sum)) + bits_sum
+        
+    final_checksum = complement_1(bits_sum)
     return final_checksum
 
 # Calculando o complemento de 1
 def complement_1(new_sum):
+  #  print(new_sum)
     the_checksum = ''
     for bit in new_sum:
         # Troca os 1 por 0
