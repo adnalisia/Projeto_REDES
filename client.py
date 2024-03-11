@@ -112,8 +112,8 @@ class UDPClient:  # criando a classe do cliente
 
     # função para o cliente receber threads:
     def threads_rcv(self):
-        thread1 = threading.Thread(target=self.waitack)
-        thread2 = threading.Thread(target=self.rcvmsgtreat)
+        thread1 = threading.Thread(target=self.waitack())
+        thread2 = threading.Thread(target=self.rcvmsgtreat())
         thread1.start()
         thread2.start()
 
@@ -205,13 +205,15 @@ class UDPClient:  # criando a classe do cliente
         self.ackok = False
         #tentar receber o ack
         try:
-            self.waitack(data)
+            flag = self.waitack(data)
+            if not flag:
+                self.sndpkt(data)
         #caso dê timeout
         except socket.timeout:
             self.sndpkt(data)
     
     #função para esperar o ack
-    def waitack(self, data):
+    def waitack(self):
         with self.ack:
             #enquanto a flag de que recebeu ack não for verdade
             while self.ackflag:
@@ -219,7 +221,9 @@ class UDPClient:  # criando a classe do cliente
                 self.ack.wait()
             #se for um NAK reenvia os dados
             if not self.ackok:
-                self.sndpkt(data)
+                return False
+            else:
+                return True
 
 # inicia o chat
 if __name__ == "__main__":

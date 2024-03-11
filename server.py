@@ -152,9 +152,9 @@ class UDPServer:
 
     def start(self):
         self.messages = queue.Queue() #cria fila de mensagens
-        thread1 = threading.Thread(target=self.receive)
-        thread2 = threading.Thread(target=self.broadcast)
-        thread3 = threading.Thread(target=self.waitack)
+        thread1 = threading.Thread(target=self.receive())
+        thread2 = threading.Thread(target=self.broadcast())
+        thread3 = threading.Thread(target=self.waitack())
         thread1.start()
         thread2.start()
         thread3.start()
