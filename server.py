@@ -15,7 +15,7 @@ class UDPServer:
         self.lastack = {}
         self.acktrue = False
         self.ackflag = False
-        self.ack = threading.Ack()
+        self.ack = threading.Condition()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.host, self.port))
         print('Aguardando conexão de um cliente')

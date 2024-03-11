@@ -18,10 +18,9 @@ class UDPClient:  # criando a classe do cliente
             socket.AF_INET, socket.SOCK_DGRAM)  # criando um socket udp
         self.seqnumber = 0
         self.lastack = 0
-        self.ack = threading.Ack()
+        self.ack = threading.Condition()
         self.ackflag = False
         self.ackok = False
-        self.synack = threading.Ack()
         self.messagequeue = ''
         self.synack = False
         self.connected = False
