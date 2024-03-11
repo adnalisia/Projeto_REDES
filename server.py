@@ -39,6 +39,9 @@ class UDPServer:
                             self.nicknames[address] = nickname
                             self.send_to_all(decoded_message)
                             self.sndpkt('ACK', address)
+                            client_port = address[1]
+                            client_ip = address[2]
+                            self.sndpkt(f'IP.PORT,{client_port}/{client_ip}')
                         else:
                             if decoded_message == "bye":
                                 nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address

@@ -67,7 +67,6 @@ class UDPClient:  # criando a classe do cliente
                     #se for cria a thread
                     self.connected = True
                     self.socket.connect(self.hostaddress)
-                    (self.client_IP, self.client_port) = self.socket.getsockname()
                     self.message_fragment(hello_message)
             #se ta corrompido, envia msg de conexão de novo
             else:
@@ -132,6 +131,12 @@ class UDPClient:  # criando a classe do cliente
                         self.ackflag = True
                         self.ack.notify()
                     self.socket.close()
+                elif message.decode().startswith('IP.PORT'):
+                    if seqnumb != self.seqnumber:
+                        rcvpkt = message.decode().split(',')
+                        address = rcvpkt.split('/')
+                        self.client_IP = address[0]
+                        self.client_port = address[1]
                 #se a mensagem for qualquer outra
                 elif self.connected:
                     if seqnumb != self.seqnumber: 
