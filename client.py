@@ -97,7 +97,7 @@ class UDPClient:  # criando a classe do cliente
     def rcvmessages(self):
         while True:
             #chama a mensagem
-            rcvpkt, = self.socket.recv(1024)
+            rcvpkt = self.socket.recv(1024)
             #recebe a mensagem, seu numero de sequencia e estado
             message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
             #vê se a mensagem não ta corrompida
