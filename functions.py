@@ -1,21 +1,16 @@
 import socket
 
-# Função para transformar bytes em bits
-def bytes_to_bits(data):
-    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
-    return message_bits
-
 # Função checksum
 def checksum(data):
     # Transforma bytes em bits
-    message_bits = bytes_to_bits(data)
+    message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
     # Dividindo em 8 bits
     bytes_parts_list = []    # cria uma lista para as partes em 8 bits
     part_lenght = 8
     j = 8
     i = 0
     # Loop para dividir a mensagem em partes de 8 bits
-    while i < len(message_bits) :
+    while j < len(message_bits) :
         byte_part = message_bits[i:j]
         i = j
         j = j + 8
@@ -25,8 +20,8 @@ def checksum(data):
     # Soma as partes
     for bit_part in bytes_parts_list:
         # soma cada parte com a seguinte
-        bits_sum = bin(int(bit_part, 2))[2:]
-        #return bits_sum
+        bits_sum = '00000000'
+        bits_sum = bin(int(bits_sum, 2) + int(bit_part, 2))[2:]
 
     # Adicionando o overflow
     if len(bits_sum) > part_lenght:
@@ -37,12 +32,16 @@ def checksum(data):
     # Adiciona zeros à esquerda em caso de soma menor que 8 bits
     if len(bits_sum) < part_lenght:
         new_sum = '0' * (part_lenght - len(bits_sum)) + bits_sum
-
+    # Caso a soma tenha 8 bits
+    else:
+        new_sum = bits_sum
+        
     final_checksum = complement_1(new_sum)
     return final_checksum
 
 # Calculando o complemento de 1
 def complement_1(new_sum):
+  #  print(new_sum)
     the_checksum = ''
     for bit in new_sum:
         # Troca os 1 por 0
