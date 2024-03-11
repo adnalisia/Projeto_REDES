@@ -18,9 +18,9 @@ def checksum(data):
         bytes_parts_list.append(byte_part)
 
     # Soma as partes
+    bits_sum = '00000000'
     for bit_part in bytes_parts_list:
         # soma cada parte com a seguinte
-        bits_sum = '00000000'
         bits_sum = bin(int(bits_sum, 2) + int(bit_part, 2))[2:]
 
     # Adicionando o overflow
