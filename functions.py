@@ -54,10 +54,8 @@ def make_pkt(data, seqnumb):
     data = data.encode()
     #primeiro fazendo o checksum dos dados
     cks = checksum(data)
-    #chamar a função do complemento de 1
-    cpmt1 = complement_1(cks)
     #criamos o pacote com o id, os dados e o checksum
-    pkt = [seqnumb, data, cpmt1]
+    pkt = [seqnumb, data, cks]
     sndpkt = str(pkt)
     return sndpkt
 
