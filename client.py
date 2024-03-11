@@ -45,45 +45,7 @@ class UDPClient:  # criando a classe do cliente
             else:
                 print(
                     "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
-        # conectando o cliente ao chat de mensagens:
-            
-    
-    
-    # função para trata mensagens recebidas
-    def rcvmsgtreat(self, message, seqnumb):
-        #se a mensagem for um ack
-        if message.decode() == 'ACK':
-            self.lastack = seqnumb
-            self.ackok = True
-            with self.ack:
-                self.ackflag = True
-                self.ack.notify()
-        #se a mensagem for um synack
-        elif message.decode() == 'SYNACK':
-            self.lastack = seqnumb
-            self.connected = True
-            self.ackok = True
-            with self.ack:
-                self.ackflag = True
-                self.synack = True
-                self.ack.notify()
-        #se a mensagem for um NAK
-        elif message.decode() == 'NAK':
-            with self.ack:
-                self.ackflag = True
-                self.ack.notify()
-         #se a mensagem for um finak e ai encerra a conexão
-        elif message.decode() == 'FINAK':
-            self.connected = False
-            with self.ack:
-                self.ackflag = True
-                self.ack.notify()
-            self.socket.close()
-        #se a mensagem for qualquer outra
-        elif self.connected:
-            if seqnumb != self.seqnumber: 
-                self.message_defrag(message)
-                self.sndpkt('ACK')
+
 
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
@@ -117,7 +79,7 @@ class UDPClient:  # criando a classe do cliente
     # função para o cliente receber threads:
     def threads_rcv(self):
         thread1 = threading.Thread(target=self.waitack())
-        thread2 = threading.Thread(target=self.rcvmsgtreat())
+        thread2 = threading.Thread(target=self.rcvmessages())
         thread1.start()
         thread2.start()
 
@@ -142,8 +104,39 @@ class UDPClient:  # criando a classe do cliente
             message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
             #vê se a mensagem não ta corrompida
             if state == 'ACK':
-                #retorna as variaveis
-                self.rcvmsgtreat(message, seqnumb)
+                #se a mensagem for um ack
+                if message.decode() == 'ACK':
+                    self.lastack = seqnumb
+                    self.ackok = True
+                    with self.ack:
+                        self.ackflag = True
+                        self.ack.notify()
+                #se a mensagem for um synack
+                elif message.decode() == 'SYNACK':
+                    self.lastack = seqnumb
+                    self.connected = True
+                    self.ackok = True
+                    with self.ack:
+                        self.ackflag = True
+                        self.synack = True
+                        self.ack.notify()
+                #se a mensagem for um NAK
+                elif message.decode() == 'NAK':
+                    with self.ack:
+                        self.ackflag = True
+                        self.ack.notify()
+                #se a mensagem for um finak e ai encerra a conexão
+                elif message.decode() == 'FINAK':
+                    self.connected = False
+                    with self.ack:
+                        self.ackflag = True
+                        self.ack.notify()
+                    self.socket.close()
+                #se a mensagem for qualquer outra
+                elif self.connected:
+                    if seqnumb != self.seqnumber: 
+                        self.message_defrag(message)
+                        self.sndpkt('ACK')
             #se a mensagem tiver corrompida, envia um NAK para o cliente
             else:
                 self.sndpkt('NAK')
