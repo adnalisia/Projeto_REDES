@@ -46,8 +46,8 @@ class UDPClient:  # criando a classe do cliente
 
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
-        #envia a mensagem de iniciar
-        self.socket.connect(self.hostaddress)
+        #envia a mensagem de iniciar	        
+        self.sndpkt('connected')
         self.threads_rcv()
         #começa o timer
         self.socket.settimeout(1.0)
@@ -203,12 +203,12 @@ class UDPClient:  # criando a classe do cliente
     def sndpkt(self, data):
         # envia arquivos para o servirdor
         sndpkt = functions.make_pkt(data, self.seqnumber)
-        self.socket.send(sndpkt.encode())
+        self.socket.sendto(sndpkt.encode(), self.hostaddress)
         self.socket.settimeout(1.0)
         self.ackok = False
         #tentar receber o ack
         try:
-            flag = self.waitack(data)
+            flag = self.waitack()
             if not flag:
                 self.sndpkt(data)
         #caso dê timeout
