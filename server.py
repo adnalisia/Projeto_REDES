@@ -62,8 +62,11 @@ class UDPServer:
     #função para receber mensagens
     def receive(self):
         while True:
-            #recebe a mensagem, seu numero de sequencia e address
-            message, seqnumb, address, state = functions.rdt_rcv(1024)
+            #chama a mensagem
+            rcvpkt, address = self.socket.recvfrom(1024)
+            #recebe a mensagem, seu numero de sequencia e estado
+            message, seqnumb, state = functions.rdt_rcv(rcvpkt.decode())
+            #vê se a mensagem não ta corrompida
             if state == 'ACK':
                 #checa se o numero de sequencia da mensagem recebida é diferente da ultima, se for coloca a mensagem na fila
                 if seqnumb != self.lastack[address]:
@@ -85,11 +88,11 @@ class UDPServer:
     def sndpkt(self, data, client):
         # envia arquivos para o servirdor
         sndpkt = functions.rdt_send(data, self.seqnumber[client])
-        self.socket.sendto(sndpkt, client)
+        self.socket.sendto(sndpkt.encode(), client)
         socket.settimeout(1.0)
         #tentar receber o ack
         try:
-            infoconf, _, _, state = socket.rcvfrom(1024)
+            infoconf, _, _, state = socket.recvfrom(1024)
             #checa se o ack ta ok
             if state == 'ACK':
                 #caso a mensagem enviada esteja corrompido

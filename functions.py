@@ -5,11 +5,15 @@ def checksum(data):
     # Transforma bytes em bits
     message_bits = bin(int.from_bytes(data, byteorder='big'))[2:]
     # Dividindo em 8 bits
-    bytes_parts_list = []   # cria uma lista para as partes em 8 bits
-    part_lenght = 8
+    bytes_parts_list = []
+    part_lenght = 8   # cria uma lista para as partes em 8 bits
+    j = 8
+    i = 0
     # Loop para dividir a mensagem em partes de 8 bits
-    while message_bits:
-        byte_part = message_bits[0:part_lenght]
+    while i < len(message_bits) :
+        byte_part = message_bits[i:j]
+        i = j
+        j = j + 8
         # Adiciona as partes na lista
         bytes_parts_list.append(byte_part)
 
@@ -42,6 +46,8 @@ def complement_1(new_sum):
         # Troca os 0 por 1
         else:
             the_checksum += '1'
+    inteiro = int(the_checksum,2) + 1
+    the_checksum = format(inteiro, 'b')
     return the_checksum
 
 
@@ -49,18 +55,18 @@ def complement_1(new_sum):
 def rdt_send(data, seqnumb):
     data = data.encode()
     #primeiro fazendo o checksum dos dados
-    cks = checksum(data, len(data))
+    cks = checksum(data)
     #chamar a função do complemento a dois
     cpmt1 = complement_1(cks)
     #criamos o pacot com o id, os dados e o checksum
-    sndpkt = [seqnumb, data, cpmt1]
+    pkt = [seqnumb, data, cpmt1]
+    sndpkt = str(pkt)
     return sndpkt
 
 
 #função de receber
-def rdt_rcv():
-    #chama a mensagem
-    rcvpkt, sender = socket.recvfrom(1024)
+def rdt_rcv(rcvpkt):
+    rcvpkt = eval(rcvpkt)
     #cria a variavel para o seqnumb
     seqnumb = rcvpkt[0]
     #cria a variavel para os dados
@@ -68,11 +74,15 @@ def rdt_rcv():
     #pega o valor da soma
     cks = checksum(data)
     #faz o checksum
-    sum = int(bin(cks+rcvpkt[2]))
+    start_number = int(cks, 2) + int(rcvpkt[2], 2)
+    i = len(start_number) - 8
+    binary = bin(start_number)
+    new_string = binary[i:]
+    sum = bin(new_string)
     #checa o checksum
     if sum == 0:
         #envia os dados e o ack
-        return data, seqnumb, sender, 'ACK'
+        return data, seqnumb, 'ACK'
     else:
         #envia os dados e o nak
-        return data, seqnumb, sender, 'NAK'
+        return data, seqnumb, 'NAK'

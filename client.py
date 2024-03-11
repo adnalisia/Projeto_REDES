@@ -6,12 +6,10 @@ import random
 import time
 import functions
 
-
 class UDPClient:  # criando a classe do cliente
 
     def __init__(self, host, port):
-        self.host = host  # host do servidor
-        self.port = port  # porta do servidor
+        self.hostaddres = (host , port)
         self.client_IP = None # ip do cliente
         self.client_port = None  # porta do cliente
         self.nickname = None  # nome do cliente
@@ -46,12 +44,13 @@ class UDPClient:  # criando a classe do cliente
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
         #envia a mensagem de iniciar
-        functions.rdt_send('connection', self.seqnumber, (self.host, self.port))
+        self.sndpkt('connection')
         #começa o timer
-        socket.settimeout(1.0)
+        self.socket.settimeout(1.0)
         try:
             #tenta receber o pacote
-            rcvpkt, _, _, state = functions.rdt_rcv()
+            pkt, _ = self.socket.recvfrom(1024)
+            rcvpkt, _, state = functions.rdt_rcv(pkt.decode())
             if state == 'ACK':
                 #checa se não é o synack
                 if rcvpkt[1].decode() != "SYNACK":
@@ -95,7 +94,9 @@ class UDPClient:  # criando a classe do cliente
 
     # função para receber mensagens ip e porta
     def receive_IP(self):
-        data, seqnumb, _, state = functions.rdt_rcv()
+        #chama a mensagem
+        rcvpkt, _ = self.socket.recvfrom(1024)
+        data, seqnumb, state = functions.rdt_rcv(rcvpkt.decode())
         if state == 'ACK':
             #se deu, envia o ack e chama a recursiva
             functions.rdt_send('ACK', seqnumb)
@@ -114,8 +115,10 @@ class UDPClient:  # criando a classe do cliente
     # loop que depende também da flag de conexão
     def receive_messages(self):
         while self.connection_flag:
+            #chama a mensagem
+            rcvpkt, _ = self.socket.recvfrom(1024)
             #chama a função de enviar o ack
-            data, seqnumb, _, state = functions.rdt_rcv()
+            data, seqnumb, state = functions.rdt_rcv(rcvpkt.decode())
             if state == 'ACK':
                 #se deu, envia o ack e chama a recursiva
                 functions.rdt_send('ACK', seqnumb)   
@@ -181,8 +184,9 @@ class UDPClient:  # criando a classe do cliente
             if seqnumb != self.seqnmbrcv:
                 partial_message += message
                 self.seqnmbrcv = seqnumb
-            # Caso contrário, continua a receber mensagens e descarta a recebida
-            data, seqnumb, _, state = functions.rdt_rcv()
+            #chama a mensagem
+            rcvpkt, _ = self.socket.recvfrom(1024)
+            data, seqnumb, state = functions.rdt_rcv(rcvpkt.decode())
             #checa se deu tudo certo com a mensagem
             if state == 'ACK':
                 #se deu, envia o ack e chama a recursiva
@@ -197,11 +201,12 @@ class UDPClient:  # criando a classe do cliente
     def sndpkt(self, data):
         # envia arquivos para o servirdor
         sndpkt = functions.rdt_send(data, self.seqnumber)
-        self.socket.sendto(sndpkt, (self.host, self.port))
-        socket.settimeout(1.0)
+        self.socket.sendto(sndpkt.encode(), self.hostaddres)
+        self.socket.settimeout(1.0)
         #tentar receber o ack
         try:
-            infoconf, _, _, state = socket.rcvfrom(self.buffer_size)
+            info, _ = self.socket.recvfrom(self.buffer_size)
+            infoconf, _, state = functions.rdt_rcv(info.decode())
             #checa se o ack ta ok
             if state == 'ACK':
                 #caso a mensagem enviada esteja corrompido
