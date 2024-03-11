@@ -10,6 +10,7 @@ class UDPClient:  # criando a classe do cliente
 
     def __init__(self, host, port):
         self.hostaddress = (host , port)
+        self.name =
         self.client_IP = None # ip do cliente
         self.client_port = None  # porta do cliente
         self.nickname = None  # nome do cliente
@@ -26,7 +27,7 @@ class UDPClient:  # criando a classe do cliente
         self.connected = False
 
     def start(self):
-        self.client_IP, self.client_port = self.socket.getsockname()
+        (self.client_IP, self.client_port) = self.socket.getsockname()
         # primeiro cria-se um while para receber o input que conecta ao servidor
         while True:
             self.threads_rcv()
