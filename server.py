@@ -76,35 +76,30 @@ class UDPServer:
                             self.send_to_all(decoded_message)
                 except:
                     pass
-
-    #função para receber mensagens
-    def receive(self):
-        while True:
-            message, address, seqnumb = self.rcvpkt()
-            self.messages.put((message, address, seqnumb))
+            
 
     
-    def rcvpkt(self):
-        #chama a mensagem
-        rcvpkt, address = self.socket.recvfrom(1024)
-        #recebe a mensagem, seu numero de sequencia e estado
-        message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
-        #vê se a mensagem não ta corrompida
-        if state == 'ACK':
-            #checa se o numero de sequencia da mensagem recebida é diferente da ultima, se for coloca a mensagem na fila
-            if seqnumb != self.seqnumber.get(address):
-                #envia o ack para o cliente
-                self.sndpkt('ACK', address)
-                #retorna as variaveis
-                return message, address, seqnumb
-            #se for o mesmo seqnumb
+    def receive(self):
+        while True:
+            #chama a mensagem
+            rcvpkt, address = self.socket.recvfrom(1024)
+            #recebe a mensagem, seu numero de sequencia e estado
+            message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
+            #vê se a mensagem não ta corrompida
+            if state == 'ACK':
+                #checa se o numero de sequencia da mensagem recebida é diferente da ultima, se for coloca a mensagem na fila
+                if seqnumb != self.seqnumber.get(address):
+                    #envia o ack para o cliente
+                    self.sndpkt('ACK', address)
+                    #retorna as variaveis
+                    self.messages.put((message, address, seqnumb))
+                #se for o mesmo seqnumb
+                else:
+                    #só espera pra receber de novo
+                    print('Mensagem repetida descartada.')
+            #se a mensagem tiver corrompida, envia um NAK para o cliente
             else:
-                #só espera pra receber de novo
-                print('Mensagem repetida descartada.')
-                self.rcvpkt()
-        #se a mensagem tiver corrompida, envia um NAK para o cliente
-        else:
-            self.sndpkt('NAK', address)
+                self.sndpkt('NAK', address)
     
     #metodo para remover o cliente de todas as listas
     def removeclient(self, address):
