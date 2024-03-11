@@ -10,7 +10,6 @@ class UDPClient:  # criando a classe do cliente
 
     def __init__(self, host, port):
         self.hostaddress = (host , port)
-        self.name =
         self.client_IP = None # ip do cliente
         self.client_port = None  # porta do cliente
         self.nickname = None  # nome do cliente
