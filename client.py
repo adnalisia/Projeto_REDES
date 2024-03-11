@@ -26,7 +26,6 @@ class UDPClient:  # criando a classe do cliente
         self.connected = False
 
     def start(self):
-        (self.client_IP, self.client_port) = self.socket.getsockname()
         # primeiro cria-se um while para receber o input que conecta ao servidor
         while True:
             self.threads_rcv()
@@ -136,7 +135,7 @@ class UDPClient:  # criando a classe do cliente
 
     #função para lidar com as mensagens
     def rcvmessages(self):
-         while True:
+        while True:
             #chama a mensagem
             rcvpkt, _ = self.socket.recvfrom(1024)
             #recebe a mensagem, seu numero de sequencia e estado
