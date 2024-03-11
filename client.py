@@ -66,7 +66,6 @@ class UDPClient:  # criando a classe do cliente
                 else:
                     #se for cria a thread
                     self.connected = True
-                    self.socket.connect(self.hostaddress)
                     self.message_fragment(hello_message)
             #se ta corrompido, envia msg de conexão de novo
             else:
