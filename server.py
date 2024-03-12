@@ -10,7 +10,8 @@ class UDPServer:
         self.port = port
         self.clients = set()
         self.nicknames = {}
-        self.seqnumber = {}
+        self.seqnumberlist = {}
+        self.seqnumber = 0
         self.acktrue = False
         self.ackflag = False
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -21,11 +22,9 @@ class UDPServer:
         while True:
             try:
                 #desempacota a tupla que contém mensagem e endereço que está na fila de mensagem
-                message, address, seqnumb = self.messages.get() #decodifica mensagem
-                self.sndack('ACK', address, seqnumb)
-                print(f'Mensagem recebida de {address}. ACK enviado.')  
+                message = self.messages.get() 
                 #envia a mensagem para todos
-                self.send_to_all(message, seqnumb)
+                self.send_to_all(message)
             except:
                 pass
             
@@ -52,8 +51,8 @@ class UDPServer:
                         self.ackflag = True
                 else:
                     if state == 'ACK':
-                        if seqnumb != self.seqnumber.get(address):
-                            self.seqnumber[address] = seqnumb
+                        if seqnumb != self.seqnumberlist.get(address):
+                            self.seqnumberlist[address] = seqnumb
                             if message == "bye":
                                 nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
                                 print(f'{nickname} saiu do servidor.') #print no terminal do servidor
@@ -69,9 +68,12 @@ class UDPServer:
                                 self.nicknames[address] = nickname
                                 self.send_to_all(f'{nickname} entrou no chat!')
                             else:
-                                self.messages.put((message, address, seqnumb))
+                                self.messages.put((message))                
+                                self.sndack('ACK', address, seqnumb)
+                                print(f'Mensagem recebida de {address}. ACK enviado.')  
                     else:
                         self.sndack('NAK', address, seqnumb)
+                        print(f'Mensagem recebida de {address} corrompida. NAK enviado.')
             except:
                 pass
                     
@@ -79,15 +81,16 @@ class UDPServer:
     #metodo para remover o cliente de todas as listas
     def removeclient(self, address):
         self.clients.remove(address) #remove cliente da lista de clientes
-        del self.seqnumber[address] #remove o cliente da lista de seqnumbers
+        del self.seqnumberlist[address] #remove o cliente da lista de seqnumbers
         del self.nicknames[address] #remove o apelido do cliente
 
 
     #def usado dentro do broadcasting para enviar a mensagem para todos os clientes
-    def send_to_all(self, message, seqnumber):
+    def send_to_all(self, message):
+        self.seqnumber = (self.seqnumber+1)%2
         #para cada cliente na lista de clientes ele envia a mensagem codificada
         for client in self.clients:
-            self.sndpkt(message, client, seqnumber)
+            self.sndpkt(message, client, self.seqnumber)
 
     #função de enviar
     def sndpkt(self, data, client, seqnumber):
@@ -105,14 +108,14 @@ class UDPServer:
             if not flag:
                 #reenvia o pacote
                 self.sndpkt(data, client, seqnumber)
-                print('Erro! Pacote enviado corrompido, enviando pacote novamente.')
+                print(f'Erro! Pacote enviado para {client} corrompido, enviando pacote novamente.')
             else:
                 #tudo certo, pacote recebido
-                print('Pacote recebido pelo cliente com sucesso!')
+                print(f'Pacote recebido por {client} com sucesso!')
         #caso não receba dentro do tempo
         except socket.timeout:
             self.sndpkt(data, client, seqnumber)
-            print('Erro! Timeout, enviando pacote novamente.')
+            print(f'Erro! Timeout, enviando pacote para {client} novamente.')
     
     #função de esperar o ack
     def waitack(self):

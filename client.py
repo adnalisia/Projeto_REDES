@@ -20,6 +20,7 @@ class UDPClient:  # criando a classe do cliente
         self.messagequeue = ''
         self.synack = False
         self.connected = False
+        self.lastseqnumber = 1
 
     def start(self):
         # primeiro cria-se um while para receber o input que conecta ao servidor
@@ -47,9 +48,6 @@ class UDPClient:  # criando a classe do cliente
                 print(
                     "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
                 self.start()
-
-
-    def messagesinput(self):
 
 
     # função do threeway handshake
@@ -113,10 +111,11 @@ class UDPClient:  # criando a classe do cliente
                         self.connected = False
                 else:
                     if state == 'ACK':
-                        if seqnumb != self.seqnumber:
+                        if seqnumb != self.lastseqnumber:
                             if self.connected:
                                 self.message_defrag(message)
                                 self.sndack('ACK', seqnumb)
+                                self.lastseqnumber = seqnumb
                     #se a mensagem tiver corrompida, envia um NAK para o cliente
                     else:
                         self.sndack('NAK', seqnumb)
@@ -144,8 +143,6 @@ class UDPClient:  # criando a classe do cliente
                 kbyte = file.read(1024)
                 # loop que cria vários arquivos com 1024 bytes no máximo
                 while kbyte:
-                    #altera o seqnumber da mensagem
-                    self.seqnumber = (self.seqnumber + 1) //2
                     #envia o pacote
                     self.sndpkt(kbyte)
                     #lê o próximo kbyte
@@ -155,8 +152,6 @@ class UDPClient:  # criando a classe do cliente
             self.sndpkt('finish')
 
         else:
-            #altera o seqnumber da mensagem
-            self.seqnumber = (self.seqnumber + 1) //2
             # envia arquivo pro servidor
             self.sndpkt(segment)
             # envia mensagem de finalização para o servidor
@@ -176,6 +171,7 @@ class UDPClient:  # criando a classe do cliente
 
     #função de enviar
     def sndpkt(self, data):
+        self.seqnumber = (self.seqnumber + 1)%2
         # envia arquivos para o servirdor
         sndpkt = functions.make_pkt(data, self.seqnumber)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
@@ -207,11 +203,6 @@ class UDPClient:  # criando a classe do cliente
         else:
             return False
 
-    def threads(self):
-        
-        thread1 = threading.Thread(target=self.messagesinput)
-        thread3.start()
-        thread1.start()
 
 
 # inicia o chat
