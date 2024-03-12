@@ -14,76 +14,67 @@ class UDPServer:
         self.seqnumber = {}
         self.acktrue = False
         self.ackflag = False
-        self.ack = threading.Condition()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.host, self.port))
         print('Aguardando conexão de um cliente')
     
     def broadcast(self):
         while True:
-            while not self.messages.empty():
+            try:
                 #desempacota a tupla que contém mensagem e endereço que está na fila de mensagem
                 message, address, seqnumb = self.messages.get() #decodifica mensagem
-                try:
-                    #se for uma mensagem normal para enviar
-                    #envia o ack
-                    self.sndack('ACK', address, seqnumb)
-                    print(f'Mensagem recebida de {address}. ACK enviado.')  
-                    #envia a mensagem para todos
-                    self.send_to_all(message, seqnumb)
-                except:
-                    pass
+                self.sndack('ACK', address, seqnumb)
+                print(f'Mensagem recebida de {address}. ACK enviado.')  
+                #envia a mensagem para todos
+                self.send_to_all(message, seqnumb)
+            except:
+                pass
             
     def receive(self):
-        signal = True
-        while signal:
-            #chama a mensagem
-            rcvpkt, address = self.socket.recvfrom(1024)
-            #recebe a mensagem, seu numero de sequencia e estado
-            message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
-            #caso a mensagem recebida seja um ACK
-            if message == 'ACK':
-                if state == 'ACK':
-                    with self.ack:
+        while True:
+            try:
+                #chama a mensagem
+                rcvpkt, address = self.socket.recvfrom(1024)
+                #recebe a mensagem, seu numero de sequencia e estado
+                message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
+                #caso a mensagem recebida seja um ACK
+                if message == 'ACK':
+                    if state == 'ACK':
                         #coloca que a ultima mensagem recebida foi validada
                         self.acktrue = True
                         #muda a flag de ack pra avisar que recebeu o ack
                         self.ackflag = True
-                        #avisa ao waitack pra continuar
-                        self.ack.notify()
-            #caso a mensagem recebida seja um nak
-            elif message == 'NAK':
-                if state == 'ACK':
-                    with self.ack:
+                #caso a mensagem recebida seja um nak
+                elif message == 'NAK':
+                    if state == 'ACK':
                         #coloca que a ultima mensagem recebida não foi validada
                         self.acktrue = False
                         #muda a flag de ack pra avisar que recebeu o ack
                         self.ackflag = True
-                        #avisa ao waitack pra continuar
-                        self.ack.notify()
-            else:
-                if state == 'ACK':
-                    if seqnumb != self.seqnumber.get(address):
-                        self.seqnumber[address] = seqnumb
-                        if message == "bye":
-                            nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
-                            print(f'{nickname} saiu do servidor.') #print no terminal do servidor
-                            self.send_to_all(f'{nickname} saiu do chat!') #envia mensagem para todos os clientes informando que cliente saiu
-                            self.removeclient(address)
-                            self.sndack('FINACK', address, seqnumb)
-                        elif message.startswith("hi, meu nome eh "):
-                            self.clients.add(address) #adiciona na lista de endereços
-                            print(f'Conexão estabelecida com {address}')
-                            self.sndack('SYNACK', address, seqnumb)
-                            nickname =  message[16:]
-                            #adiciona nickname ao dicionário de nicknames com a chave sendo o address
-                            self.nicknames[address] = nickname
-                            self.send_to_all(message, seqnumb)
-                            self.sndack('ACK', address, seqnumb)
-                        else:
-                            self.messages.put((message, address, seqnumb))
                 else:
-                    self.sndack('NAK', address, seqnumb)
+                    if state == 'ACK':
+                        if seqnumb != self.seqnumber.get(address):
+                            self.seqnumber[address] = seqnumb
+                            if message == "bye":
+                                nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
+                                print(f'{nickname} saiu do servidor.') #print no terminal do servidor
+                                self.send_to_all(f'{nickname} saiu do chat!') #envia mensagem para todos os clientes informando que cliente saiu
+                                self.removeclient(address)
+                                self.sndack('FINACK', address, seqnumb)
+                            elif message.startswith("hi, meu nome eh "):
+                                self.clients.add(address) #adiciona na lista de endereços
+                                print(f'Conexão estabelecida com {address}')
+                                self.sndack('SYNACK', address, seqnumb)
+                                nickname =  message[16:]
+                                #adiciona nickname ao dicionário de nicknames com a chave sendo o address
+                                self.nicknames[address] = nickname
+                                self.send_to_all(f'{nickname} entrou no chat!')
+                            else:
+                                self.messages.put((message, address, seqnumb))
+                    else:
+                        self.sndack('NAK', address, seqnumb)
+            except:
+                pass
                     
     
     #metodo para remover o cliente de todas as listas
@@ -126,16 +117,15 @@ class UDPServer:
     
     #função de esperar o ack
     def waitack(self):
-        with self.ack:
-            #espera o recebimento de um ack
-            while not self.ackflag:
-                self.ack.wait()
-            #se receber e for NAK
-            if self.acktrue:
-                return True
-            #se receber e for ACK
-            else:
-                return False
+        #espera o recebimento de um ack
+        while not self.ackflag:
+            self.ackflag = False
+        #se receber e for NAK
+        if self.acktrue:
+            return True
+        #se receber e for ACK
+        else:
+            return False
     
     def sndack(self, data, address, seqnumb):
         # envia arquivos para o servirdor
@@ -144,9 +134,8 @@ class UDPServer:
 
     def start(self):
         self.messages = queue.Queue() #cria fila de mensagens
-        thread1 = threading.Thread(target=self.receive)
+        self.receive()
         thread2 = threading.Thread(target=self.broadcast)
-        thread1.start()
         thread2.start()
 
 if __name__ == "__main__":

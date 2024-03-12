@@ -21,30 +21,33 @@ class UDPClient:  # criando a classe do cliente
         self.messagequeue = ''
         self.synack = False
         self.connected = False
+        self.thread3 = threading.Thread(target=self.rcvmessages)
 
     def start(self):
         # primeiro cria-se um while para receber o input que conecta ao servidor
             # pedindo o comando inicial
             starter_input = input(
-                "Digite 'hi, meu nome eh' e seu nome para se conectar ao chat:")
+                "Para se conectar ao chat digite 'hi, meu nome eh' e seu username.\nPara sair do chat digite 'bye'.\n")
             checking_substring = starter_input[0:15]
             # é feita uma checagem para garantir que se o comando inicial não estiver nesse formato, a conexão não inicia
             if checking_substring == "hi, meu nome eh":
                 self.threeway_handshake(starter_input)
                 # chama a função para o threeway handshake:
                 if self.connected:
-                    self.threads_rcv()
+                    self.thread3.start()
+                    self.messagesinput()
                 # aqui ele corta o input inicial para pegar apenas o nome do usuário e aplicar
                 self.nickname = starter_input[16:]  
             else:
                 print(
                     "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
+                self.start()
 
 
     def messagesinput(self):
-        while self.connected:
+        if self.connected:
             try:
-                message = input()
+                message = input("(Para sair do chat digite 'bye'): ")
                 self.message_fragment(message)  
             except:
                 pass
@@ -182,7 +185,7 @@ class UDPClient:  # criando a classe do cliente
         self.ackok = False
         #tentar receber o ack
         try:
-            self.rcvmessages()
+            self.thread3()
             flag = self.waitack()
             if not flag:
                 self.sndpkt(data)
@@ -207,12 +210,7 @@ class UDPClient:  # criando a classe do cliente
             return False
 
 
-    # função para o cliente receber threads:
-    def threads_rcv(self):
-        thread2 = threading.Thread(target=self.rcvmessages(), daemon=True)
-        thread4 = threading.Thread(target=self.messagesinput(), daemon=True)
-        thread2.start()
-        thread4.start()
+
 
 # inicia o chat
 if __name__ == "__main__":
