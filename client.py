@@ -43,8 +43,11 @@ class UDPClient:  # criando a classe do cliente
 
     def messagesinput(self):
         while self.connected:
-            message = input()
-            self.message_fragment(message)  
+            try:
+                message = input()
+                self.message_fragment(message)  
+            except:
+                pass
 
 
     # função do threeway handshake
@@ -85,36 +88,38 @@ class UDPClient:  # criando a classe do cliente
     #função para lidar com as mensagens
     def rcvmessages(self):
         while True:
-            #chama a mensagem
-            rcvpkt = self.socket.recv(1024)
-            #recebe a mensagem, seu numero de sequencia e estado
-            message, seqnumb, state = functions.open_pkt(rcvpkt.decode())            
-            #se a mensagem for um ack
-            if message == 'ACK':
-                if state == 'ACK':
-                    self.lastack = seqnumb
-                    self.ackok = True
-                    self.ackflag = True
-            #se a mensagem for um NAK
-            elif message == 'NAK':
-                if state == 'ACK':
-                    self.ackflag = True
-                    self.ackok = False
-            #se a mensagem for um finak e ai encerra a conexão
-            elif message == 'FINAK':
-                if state == 'ACK':
-                    self.ackflag = True
-                    self.connected = False
-            else:
-                if state == 'ACK':
-                    if seqnumb != self.seqnumber:
-                        if self.connected:
-                            self.message_defrag(message)
-                            self.sndack('ACK', seqnumb)
-                #se a mensagem tiver corrompida, envia um NAK para o cliente
+            try:
+                #chama a mensagem
+                rcvpkt = self.socket.recv(1024)
+                #recebe a mensagem, seu numero de sequencia e estado
+                message, seqnumb, state = functions.open_pkt(rcvpkt.decode())            
+                #se a mensagem for um ack
+                if message == 'ACK':
+                    if state == 'ACK':
+                        self.lastack = seqnumb
+                        self.ackok = True
+                        self.ackflag = True
+                #se a mensagem for um NAK
+                elif message == 'NAK':
+                    if state == 'ACK':
+                        self.ackflag = True
+                        self.ackok = False
+                #se a mensagem for um finak e ai encerra a conexão
+                elif message == 'FINAK':
+                    if state == 'ACK':
+                        self.ackflag = True
+                        self.connected = False
                 else:
-                    self.sndack('NAK', seqnumb)
-    
+                    if state == 'ACK':
+                        if seqnumb != self.seqnumber:
+                            if self.connected:
+                                self.message_defrag(message)
+                                self.sndack('ACK', seqnumb)
+                    #se a mensagem tiver corrompida, envia um NAK para o cliente
+                    else:
+                        self.sndack('NAK', seqnumb)
+            except:
+                pass
 
 
     # modulo que fragmenta mensagens
