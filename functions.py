@@ -65,12 +65,13 @@ def open_pkt(rcvpkt):
     rcvpkt = eval(rcvpkt)
     #cria a variavel para os dados
     data = rcvpkt[0]
+    byte = data.encode()
     #cria a variavel para o seqnumb
     seqnumb = rcvpkt[1]
     #checksum recebido com a mensagem
     cks_rcv = rcvpkt[2]
     #faz o checksum
-    cks = checksum(data)
+    cks = checksum(byte)
     #compara o checksum recebido com o calculado
     if str(cks) == str(cks_rcv):
         #envia os dados e o ack

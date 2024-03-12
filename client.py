@@ -102,16 +102,19 @@ class UDPClient:  # criando a classe do cliente
             #recebe a mensagem, seu numero de sequencia e estado
             message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
             #vê se a mensagem não ta corrompida
-            if state == 'ACK':
-                #se a mensagem for um ack
-                if message == 'ACK':
+            if 
+            
+            #se a mensagem for um ack
+            if message == 'ACK':
+                if state == 'ACK':
                     self.lastack = seqnumb
                     self.ackok = True
                     with self.ack:
                         self.ackflag = True
                         self.ack.notify()
-                #se a mensagem for um synack
-                elif message == 'SYNACK':
+            #se a mensagem for um synack
+            elif message == 'SYNACK':
+                if state == 'ACK':
                     self.lastack = seqnumb
                     self.connected = True
                     self.ackok = True
@@ -119,33 +122,36 @@ class UDPClient:  # criando a classe do cliente
                         self.ackflag = True
                         self.synack = True
                         self.ack.notify()
-                #se a mensagem for um NAK
-                elif message == 'NAK':
+            #se a mensagem for um NAK
+            elif message == 'NAK':
+                if state == 'ACK':
                     with self.ack:
                         self.ackflag = True
                         self.ack.notify()
-                #se a mensagem for um finak e ai encerra a conexão
-                elif message == 'FINAK':
+            #se a mensagem for um finak e ai encerra a conexão
+            elif message == 'FINAK':
+                if state == 'ACK':
                     self.connected = False
                     with self.ack:
                         self.ackflag = True
                         self.ack.notify()
                     self.socket.close()
-                elif message.startswith('IP.PORT'):
-                    if seqnumb != self.seqnumber:
-                        rcvpkt = message.split(',')
-                        address = rcvpkt.split('/')
-                        self.client_IP = address[0]
-                        self.client_port = address[1]
-                        self.socket.bind(self.myaddress)
-                #se a mensagem for qualquer outra
-                elif self.connected:
-                    if seqnumb != self.seqnumber: 
-                        self.message_defrag(message)
-                        self.sndpkt('ACK')
-            #se a mensagem tiver corrompida, envia um NAK para o cliente
             else:
-                self.sndpkt('NAK')
+                if state == 'ACK':
+                    if seqnumb != self.seqnumber:
+                        if message.startswith('IP.PORT'):
+                            rcvpkt = message.split(',')
+                            address = rcvpkt.split('/')
+                            self.client_IP = address[0]
+                            self.client_port = address[1]
+                            self.socket.bind(self.myaddress)
+                        #se a mensagem for qualquer outra
+                        elif self.connected:
+                            self.message_defrag(message)
+                            self.sndack('ACK', seqnumb)
+                #se a mensagem tiver corrompida, envia um NAK para o cliente
+                else:
+                    self.sndack('NAK', seqnumb)
     
 
 
@@ -213,9 +219,13 @@ class UDPClient:  # criando a classe do cliente
                 self.sndpkt(data)
         #caso dê timeout
         except socket.timeout:
-            print('DEU TIMEOUT')
-            print(data)
+            self.sndpkt(data)
     
+    def sndack(self, data, seqnumb):
+        # envia arquivos para o servirdor
+        sndpkt = functions.make_pkt(data, seqnumb)
+        self.socket.sendto(sndpkt.encode(), self.hostaddress)
+
     #função para esperar o ack
     def waitack(self):
         with self.ack:
