@@ -17,6 +17,8 @@ class UDPServer:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # cria o socket do server
         self.socket.bind((self.host, self.port)) # binda o endereço com o socket
         print('Aguardando conexão de um cliente')
+        self.messages = queue.Queue() #cria fila de mensagens
+        self.msgrcv = queue.Queue()
     
     # função para transmitir mensagens
     def broadcast(self):
@@ -37,6 +39,14 @@ class UDPServer:
                 rcvpkt, address = self.socket.recvfrom(1024)
                 # recebe a mensagem, seu numero de sequencia e estado
                 message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
+                self.msgrcv.put((message, seqnumb, state, address))
+            except:
+                pass
+
+    def rcvmsgtreat(self):
+        while True:
+            try:
+                message, seqnumb, state, address = self.msgrcv.get()
                 # caso a mensagem recebida seja um ACK
                 if message == 'ACK':
                     if state == 'ACK':
@@ -144,11 +154,12 @@ class UDPServer:
 
     # começa a thread de receber mensagens e de enviar mensagens
     def start(self):
-        self.messages = queue.Queue() #cria fila de mensagens
+        thread3 = threading.Thread(target=self.rcvmsgtreat)
         thread1 = threading.Thread(target=self.receive)
         thread2 = threading.Thread(target=self.broadcast)
         thread2.start()
         thread1.start()
+        thread3.start()
 
 # começa o servidor
 if __name__ == "__main__":

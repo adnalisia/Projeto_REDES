@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import random
 import functions
+import queue
 
 class UDPClient:  # criando a classe do cliente
 
@@ -20,6 +21,7 @@ class UDPClient:  # criando a classe do cliente
         self.synack = False # flag pra indicar se recebeu synack
         self.connected = False # flag pra indicar se o a conexão foi feita
         self.lastseqnumber = 0 # ultimo seqnumber enviado
+        self.msgrcv = queue.Queue()
 
     def start(self):
         # pedindo o comando inicial
@@ -36,13 +38,15 @@ class UDPClient:  # criando a classe do cliente
             if self.connected:                
                 thread3 = threading.Thread(target=self.rcvmessages)
                 thread3.start()
+                thread2 = threading.Thread(target=self.rcvmsgtreat)
+                thread2.start()
             # enquanto estiver conectado, pede os inputs
             while self.connected:
                 # tenta receber um input
                 try:
                     message = input("(Para sair do chat digite 'bye'): ")
                     #manda a mensagem pra fragmentação
-                    self.message_fragment(message)  
+                    self.message_treatment(message)  
                 # se não receber um input faz nada
                 except:
                     pass
@@ -102,8 +106,15 @@ class UDPClient:  # criando a classe do cliente
                 # chama a mensagem
                 rcvpkt = self.socket.recv(1024)
                 # recebe a mensagem, seu numero de sequencia e estado
-                message, seqnumb, state = functions.open_pkt(rcvpkt.decode())            
-                # se a mensagem for um ack
+                message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
+                self.msgrcv.put((message, seqnumb, state))
+            except:
+                pass
+    
+    def rcvmsgtreat(self):
+        while self.connected:
+            try:
+                message, seqnumb, state = self.msgrcv.get()
                 if message == 'ACK':
                     # se a msg não tiver corrompida
                     if state == 'ACK':
