@@ -67,7 +67,7 @@ class UDPClient:  # criando a classe do cliente
             # enquanto não receber o synack
             while not self.connected:
                 rcvpkt = self.socket.recv(1024)
-                message, seqnumber, state = functions.open_pkt(rcvpkt.decode())
+                message, _, state = functions.open_pkt(rcvpkt.decode())
                 # checa se a mensagem é ack ou synack
                 if state == 'ACK' and message == 'SYNACK':
                     # se for muda a flag do connected pra fechar o loop

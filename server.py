@@ -69,7 +69,7 @@ class UDPServer:
                                 self.sndack('SYNACK', address, seqnumb) # envia o synack
                                 nickname =  message[16:] # estipula o nickname
                                 self.nicknames[address] = nickname # adiciona nickname ao dicionário de nicknames com a chave sendo o address
-                                self.messages.put(f'{nickname} entrou no chat!') # coloca a mensagem de que fulano entrou no chat na fila
+                                #self.messages.put(f'{nickname} entrou no chat!') # coloca a mensagem de que fulano entrou no chat na fila
                             else: # se for qualquer outra mensagem
                                 self.messages.put(message) # coloca a mensagem na fila                
                                 self.sndack('ACK', address, seqnumb) # envia o ack da mensagem
