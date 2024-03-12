@@ -3,7 +3,6 @@ import threading
 from datetime import datetime
 from pathlib import Path
 import random
-import time
 import functions
 
 class UDPClient:  # criando a classe do cliente
@@ -21,7 +20,6 @@ class UDPClient:  # criando a classe do cliente
         self.messagequeue = ''
         self.synack = False
         self.connected = False
-        self.thread3 = threading.Thread(target=self.rcvmessages)
 
     def start(self):
         # primeiro cria-se um while para receber o input que conecta ao servidor
@@ -32,12 +30,19 @@ class UDPClient:  # criando a classe do cliente
             # é feita uma checagem para garantir que se o comando inicial não estiver nesse formato, a conexão não inicia
             if checking_substring == "hi, meu nome eh":
                 self.threeway_handshake(starter_input)
+                self.nickname = starter_input[16:] 
                 # chama a função para o threeway handshake:
                 if self.connected:
-                    self.thread3.start()
-                    self.messagesinput()
+                    thread3 = threading.Thread(target=self.rcvmessages)
+                    thread3.start()
                 # aqui ele corta o input inicial para pegar apenas o nome do usuário e aplicar
-                self.nickname = starter_input[16:]  
+                while self.connected:
+                    try:
+                        message = input("(Para sair do chat digite 'bye'): ")
+                        self.message_fragment(message)  
+                    except:
+                        pass
+ 
             else:
                 print(
                     "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
@@ -45,12 +50,6 @@ class UDPClient:  # criando a classe do cliente
 
 
     def messagesinput(self):
-        if self.connected:
-            try:
-                message = input("(Para sair do chat digite 'bye'): ")
-                self.message_fragment(message)  
-            except:
-                pass
 
 
     # função do threeway handshake
@@ -90,7 +89,7 @@ class UDPClient:  # criando a classe do cliente
 
     #função para lidar com as mensagens
     def rcvmessages(self):
-        while True:
+        while self.connected:
             try:
                 #chama a mensagem
                 rcvpkt = self.socket.recv(1024)
@@ -185,7 +184,6 @@ class UDPClient:  # criando a classe do cliente
         self.ackok = False
         #tentar receber o ack
         try:
-            self.thread3()
             flag = self.waitack()
             if not flag:
                 self.sndpkt(data)
@@ -209,7 +207,11 @@ class UDPClient:  # criando a classe do cliente
         else:
             return False
 
-
+    def threads(self):
+        
+        thread1 = threading.Thread(target=self.messagesinput)
+        thread3.start()
+        thread1.start()
 
 
 # inicia o chat

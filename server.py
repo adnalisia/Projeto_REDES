@@ -1,7 +1,6 @@
 import socket
 import threading
 import queue
-from pathlib import Path
 import functions
 
 class UDPServer:
@@ -134,9 +133,10 @@ class UDPServer:
 
     def start(self):
         self.messages = queue.Queue() #cria fila de mensagens
-        self.receive()
+        thread1 = threading.Thread(target=self.receive)
         thread2 = threading.Thread(target=self.broadcast)
         thread2.start()
+        thread1.start()
 
 if __name__ == "__main__":
     server = UDPServer("localhost", 50000)
