@@ -20,22 +20,23 @@ class UDPServer:
         print('Aguardando conexão de um cliente')
     
     def broadcast(self):
-        
+        while True:
             while not self.messages.empty():
                 #desempacota a tupla que contém mensagem e endereço que está na fila de mensagem
                 message, address, seqnumb = self.messages.get() #decodifica mensagem
-                try:#se for uma mensagem normal para enviar
+                try:
+                    #se for uma mensagem normal para enviar
                     #envia o ack
-                    self.sndack('ACK', address, seqnumb)  
+                    self.sndack('ACK', address, seqnumb)
+                    print(f'Mensagem recebida de {address}. ACK enviado.')  
                     #envia a mensagem para todos
                     self.send_to_all(message, seqnumb)
                 except:
                     pass
             
-
-    
     def receive(self):
-        while True:
+        signal = True
+        while signal:
             #chama a mensagem
             rcvpkt, address = self.socket.recvfrom(1024)
             #recebe a mensagem, seu numero de sequencia e estado
@@ -62,7 +63,7 @@ class UDPServer:
                         self.ack.notify()
             else:
                 if state == 'ACK':
-                    if seqnumb != self.seqnumber[address].get():
+                    if seqnumb != self.seqnumber.get(address):
                         self.seqnumber[address] = seqnumb
                         if message == "bye":
                             nickname = self.nicknames.get(address) #recupera nickname que está no dicionário com base no address
@@ -70,21 +71,17 @@ class UDPServer:
                             self.send_to_all(f'{nickname} saiu do chat!') #envia mensagem para todos os clientes informando que cliente saiu
                             self.removeclient(address)
                             self.sndack('FINACK', address, seqnumb)
-                        elif message == "connect":
+                        elif message.startswith("hi, meu nome eh "):
                             self.clients.add(address) #adiciona na lista de endereços
                             print(f'Conexão estabelecida com {address}')
                             self.sndack('SYNACK', address, seqnumb)
-                        elif message.startswith("hi, meu nome eh "):
                             nickname =  message[16:]
                             #adiciona nickname ao dicionário de nicknames com a chave sendo o address
                             self.nicknames[address] = nickname
                             self.send_to_all(message, seqnumb)
                             self.sndack('ACK', address, seqnumb)
-                            client_port = address[1]
-                            client_ip = address[2]
-                            self.sndpkt(f'IP.PORT,{client_port}/{client_ip}', address, seqnumb)
                         else:
-                            self.messages.put(message, address, seqnumb)
+                            self.messages.put((message, address, seqnumb))
                 else:
                     self.sndack('NAK', address, seqnumb)
                     
@@ -102,10 +99,10 @@ class UDPServer:
         for client in self.clients:
             self.sndpkt(message, client, seqnumber)
 
-
     #função de enviar
     def sndpkt(self, data, client, seqnumber):
         self.ackflag = False
+        self.acktrue = False
         # cria o pacote
         sndpkt = functions.make_pkt(data, seqnumber)
         #envia o pacote pro servidor
@@ -134,11 +131,11 @@ class UDPServer:
             while not self.ackflag:
                 self.ack.wait()
             #se receber e for NAK
-            if not self.acktrue:
-                return False
+            if self.acktrue:
+                return True
             #se receber e for ACK
             else:
-                return True
+                return False
     
     def sndack(self, data, address, seqnumb):
         # envia arquivos para o servirdor
@@ -147,12 +144,10 @@ class UDPServer:
 
     def start(self):
         self.messages = queue.Queue() #cria fila de mensagens
-        thread1 = threading.Thread(target=self.receive())
-        thread2 = threading.Thread(target=self.broadcast())
-        thread3 = threading.Thread(target=self.waitack())
+        thread1 = threading.Thread(target=self.receive)
+        thread2 = threading.Thread(target=self.broadcast)
         thread1.start()
         thread2.start()
-        thread3.start()
 
 if __name__ == "__main__":
     server = UDPServer("localhost", 50000)

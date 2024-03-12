@@ -1,5 +1,3 @@
-import binascii
-
 # Função checksum
 def checksum(data):
     # Transforma bytes em bits

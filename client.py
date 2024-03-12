@@ -16,7 +16,6 @@ class UDPClient:  # criando a classe do cliente
         self.client_port = None # endereço do cliente  
         self.seqnumber = 0
         self.lastack = 0
-        self.ack = threading.Condition()
         self.ackflag = False
         self.ackok = False
         self.messagequeue = ''
@@ -25,62 +24,51 @@ class UDPClient:  # criando a classe do cliente
 
     def start(self):
         # primeiro cria-se um while para receber o input que conecta ao servidor
-        while True:
             # pedindo o comando inicial
             starter_input = input(
                 "Digite 'hi, meu nome eh' e seu nome para se conectar ao chat:")
             checking_substring = starter_input[0:15]
             # é feita uma checagem para garantir que se o comando inicial não estiver nesse formato, a conexão não inicia
             if checking_substring == "hi, meu nome eh":
-                # chama a função para o threeway handshake:
                 self.threeway_handshake(starter_input)
+                # chama a função para o threeway handshake:
+                if self.connected:
+                    self.threads_rcv()
                 # aqui ele corta o input inicial para pegar apenas o nome do usuário e aplicar
-                self.nickname = starter_input[16:]
-                while self.connected:
-                    message = input()
-                    self.message_fragment(message)    
+                self.nickname = starter_input[16:]  
             else:
                 print(
                     "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
 
 
+    def messagesinput(self):
+        while self.connected:
+            message = input()
+            self.message_fragment(message)  
+
+
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
         #envia a mensagem de iniciar	        
-        self.sndpkt('connected')
-        self.threads_rcv()
+        sndpkt = functions.make_pkt(hello_message, self.seqnumber)
+        self.socket.sendto(sndpkt.encode(), self.hostaddress)
         #começa o timer
-        self.socket.settimeout(1.0)
+        self.socket.settimeout(1)
         try:
-            with self.ack:
-                while not self.ackflag:
-                    self.ack.wait()
-            #recebeu o pacote, agora checa se ta corrompido
-            if self.ackok:
-                #checa se não é o synack
-                if not self.synack:
-                    #se não for, tenta estabelecer a conexão de novo
-                    self.threeway_handshake(hello_message)
-                else:
-                    #se for cria a thread
+            while not self.synack:
+                rcvpkt = self.socket.recv(1024)
+                message, _, state = functions.open_pkt(rcvpkt.decode())
+                if state == 'ACK' and message == 'SYNACK':
+                    self.synack = True
                     self.connected = True
-                    self.message_fragment(hello_message)
-                    return self.socket
-            #se ta corrompido, envia msg de conexão de novo
-            else:
-                self.threeway_handshake(hello_message)
+                    self.seqnumber = 1
+                    self.client_IP, self.client_IP = self.socket.getsockname()
+                #se não for synack ou se tiver corrompido
+                else:
+                    self.threeway_handshake(hello_message)
         #se der timeout tenta estabelecer a conexão de novo
         except socket.timeout:
             self.threeway_handshake(hello_message)
-
-    # função para o cliente receber threads:
-    def threads_rcv(self):
-        thread1 = threading.Thread(target=self.waitack())
-        thread2 = threading.Thread(target=self.rcvmessages())
-        thread3 = threading.Thread(target=self.start())
-        thread3.start()
-        thread1.start()
-        thread2.start()
 
     # função para tratar as mensagens seguintes:
     def message_treatment(self, initial_message):
@@ -100,53 +88,27 @@ class UDPClient:  # criando a classe do cliente
             #chama a mensagem
             rcvpkt = self.socket.recv(1024)
             #recebe a mensagem, seu numero de sequencia e estado
-            message, seqnumb, state = functions.open_pkt(rcvpkt.decode())
-            #vê se a mensagem não ta corrompida
-            if 
-            
+            message, seqnumb, state = functions.open_pkt(rcvpkt.decode())            
             #se a mensagem for um ack
             if message == 'ACK':
                 if state == 'ACK':
                     self.lastack = seqnumb
                     self.ackok = True
-                    with self.ack:
-                        self.ackflag = True
-                        self.ack.notify()
-            #se a mensagem for um synack
-            elif message == 'SYNACK':
-                if state == 'ACK':
-                    self.lastack = seqnumb
-                    self.connected = True
-                    self.ackok = True
-                    with self.ack:
-                        self.ackflag = True
-                        self.synack = True
-                        self.ack.notify()
+                    self.ackflag = True
             #se a mensagem for um NAK
             elif message == 'NAK':
                 if state == 'ACK':
-                    with self.ack:
-                        self.ackflag = True
-                        self.ack.notify()
+                    self.ackflag = True
+                    self.ackok = False
             #se a mensagem for um finak e ai encerra a conexão
             elif message == 'FINAK':
                 if state == 'ACK':
+                    self.ackflag = True
                     self.connected = False
-                    with self.ack:
-                        self.ackflag = True
-                        self.ack.notify()
-                    self.socket.close()
             else:
                 if state == 'ACK':
                     if seqnumb != self.seqnumber:
-                        if message.startswith('IP.PORT'):
-                            rcvpkt = message.split(',')
-                            address = rcvpkt.split('/')
-                            self.client_IP = address[0]
-                            self.client_port = address[1]
-                            self.socket.bind(self.myaddress)
-                        #se a mensagem for qualquer outra
-                        elif self.connected:
+                        if self.connected:
                             self.message_defrag(message)
                             self.sndack('ACK', seqnumb)
                 #se a mensagem tiver corrompida, envia um NAK para o cliente
@@ -211,33 +173,41 @@ class UDPClient:  # criando a classe do cliente
         sndpkt = functions.make_pkt(data, self.seqnumber)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
         self.socket.settimeout(0.01)
+        self.ackflag = False
         self.ackok = False
         #tentar receber o ack
         try:
+            self.rcvmessages()
             flag = self.waitack()
             if not flag:
                 self.sndpkt(data)
         #caso dê timeout
         except socket.timeout:
+            print('SOCKET TIMEOUT')
             self.sndpkt(data)
     
     def sndack(self, data, seqnumb):
-        # envia arquivos para o servirdor
+        # envia ack para o servirdor
         sndpkt = functions.make_pkt(data, seqnumb)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
 
     #função para esperar o ack
     def waitack(self):
-        with self.ack:
-            #enquanto a flag de que recebeu ack não for verdade
-            while self.ackflag:
-                #espera receber ack
-                self.ack.wait()
-            #se for um NAK reenvia os dados
-            if not self.ackok:
-                return False
-            else:
-                return True
+        #espera receber ack
+        while not self.ackflag:
+            self.ackflag = False
+        if self.ackok:
+            return True
+        else:
+            return False
+
+
+    # função para o cliente receber threads:
+    def threads_rcv(self):
+        thread2 = threading.Thread(target=self.rcvmessages(), daemon=True)
+        thread4 = threading.Thread(target=self.messagesinput(), daemon=True)
+        thread2.start()
+        thread4.start()
 
 # inicia o chat
 if __name__ == "__main__":
