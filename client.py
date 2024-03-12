@@ -11,65 +11,74 @@ class UDPClient:  # criando a classe do cliente
         self.hostaddress = (host , port)
         self.nickname = None  # nome do cliente
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)# criando um socket udp
-        self.client_IP = None
-        self.client_port = None # endereço do cliente  
-        self.seqnumber = 0
-        self.lastack = 0
-        self.ackflag = False
-        self.ackok = False
-        self.messagequeue = ''
-        self.synack = False
-        self.connected = False
-        self.lastseqnumber = 1
+        self.client_IP = None # endereço ip do cliente
+        self.client_port = None # porta do cliente  
+        self.seqnumber = 0 # ultimo seqnumber recebido
+        self.ackflag = False # flag pra indicar se o ack foi recebido
+        self.ackok = False # flag pra indicar se a mensagem recebida não foi corrompida
+        self.messagequeue = '' # fila da mensagem recebida antes de ser printada
+        self.synack = False # flag pra indicar se recebeu synack
+        self.connected = False # flag pra indicar se o a conexão foi feita
+        self.lastseqnumber = 0 # ultimo seqnumber enviado
 
     def start(self):
-        # primeiro cria-se um while para receber o input que conecta ao servidor
-            # pedindo o comando inicial
-            starter_input = input(
-                "Para se conectar ao chat digite 'hi, meu nome eh' e seu username.\nPara sair do chat digite 'bye'.\n")
-            checking_substring = starter_input[0:15]
-            # é feita uma checagem para garantir que se o comando inicial não estiver nesse formato, a conexão não inicia
-            if checking_substring == "hi, meu nome eh":
-                self.threeway_handshake(starter_input)
-                self.nickname = starter_input[16:] 
-                # chama a função para o threeway handshake:
-                if self.connected:
-                    thread3 = threading.Thread(target=self.rcvmessages)
-                    thread3.start()
-                # aqui ele corta o input inicial para pegar apenas o nome do usuário e aplicar
-                while self.connected:
-                    try:
-                        message = input("(Para sair do chat digite 'bye'): ")
-                        self.message_fragment(message)  
-                    except:
-                        pass
- 
-            else:
-                print(
-                    "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
-                self.start()
+        # pedindo o comando inicial
+        starter_input = input(
+            "Para se conectar ao chat digite 'hi, meu nome eh' e seu username.\nPara sair do chat digite 'bye'.\n")
+        checking_substring = starter_input[0:15]
+        # é feita uma checagem para garantir que se o comando inicial não estiver nesse formato, a conexão não inicia
+        if checking_substring == "hi, meu nome eh":
+            # se ta no formato certo, chama o threeway handshake
+            self.threeway_handshake(starter_input)
+            # crio o apelido da pessoa
+            self.nickname = starter_input[16:] 
+            # agora se tiver conectado certo chama a thread de receber mensagens:
+            if self.connected:                
+                thread3 = threading.Thread(target=self.rcvmessages)
+                thread3.start()
+            # enquanto estiver conectado, pede os inputs
+            while self.connected:
+                # tenta receber um input
+                try:
+                    message = input("(Para sair do chat digite 'bye'): ")
+                    #manda a mensagem pra fragmentação
+                    self.message_fragment(message)  
+                # se não receber um input faz nada
+                except:
+                    pass
+
+        else:
+            # caso a mensagem inicial esteja errada
+            print(
+                "ERRO: Por favor envie a mensagem inicial com seu nome para ser conectado ao chat.")
+            # chama a função inicial de novo
+            self.start()
 
 
     # função do threeway handshake
     def threeway_handshake(self, hello_message):
-        #envia a mensagem de iniciar	        
+        # cria o pacote e envia a mensagem de iniciar	        
         sndpkt = functions.make_pkt(hello_message, self.seqnumber)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
-        #começa o timer
+        # começa o timer
         self.socket.settimeout(1)
+        # tenta receber o synack
         try:
-            while not self.synack:
+            # enquanto não receber o synack
+            while not self.connected:
                 rcvpkt = self.socket.recv(1024)
-                message, _, state = functions.open_pkt(rcvpkt.decode())
+                message, seqnumber, state = functions.open_pkt(rcvpkt.decode())
+                # checa se a mensagem é ack ou synack
                 if state == 'ACK' and message == 'SYNACK':
-                    self.synack = True
+                    # se for muda a flag do connected pra fechar o loop
                     self.connected = True
-                    self.seqnumber = 1
-                    self.client_IP, self.client_IP = self.socket.getsockname()
-                #se não for synack ou se tiver corrompido
+                    # recebe o ip e a porta do cliente
+                    self.client_IP, self.client_port = self.socket.getsockname()
+                # se não for synack ou se tiver corrompido
                 else:
+                    # chama a threeway pra tentar conexão de novo
                     self.threeway_handshake(hello_message)
-        #se der timeout tenta estabelecer a conexão de novo
+        # se der timeout tenta estabelecer a conexão de novo
         except socket.timeout:
             self.threeway_handshake(hello_message)
 
@@ -79,43 +88,45 @@ class UDPClient:  # criando a classe do cliente
         now = datetime.now()
         # cria um timestamp pra ser usado no cabeçalho da mensagem e no titulo dos arquivos fragmentados
         timestamp = f"{now.hour}:{now.minute}:{now.second} {now.day}/{now.month}/{now.year}"
-        #bota cabeçalho
+        # bota cabeçalho
         segment = f"{self.client_IP}:{self.client_port}/~{self.nickname}: {initial_message} {timestamp}"
-        #chama a função pra fragmentar
+        # chama a função pra fragmentar
         self.message_fragment(segment)
 
 
-    #função para lidar com as mensagens
+    # função para lidar com as mensagens
     def rcvmessages(self):
+        # enquanto estiver conectado
         while self.connected:
             try:
-                #chama a mensagem
+                # chama a mensagem
                 rcvpkt = self.socket.recv(1024)
-                #recebe a mensagem, seu numero de sequencia e estado
+                # recebe a mensagem, seu numero de sequencia e estado
                 message, seqnumb, state = functions.open_pkt(rcvpkt.decode())            
-                #se a mensagem for um ack
+                # se a mensagem for um ack
                 if message == 'ACK':
+                    # se a msg não tiver corrompida
                     if state == 'ACK':
-                        self.lastack = seqnumb
-                        self.ackok = True
-                        self.ackflag = True
-                #se a mensagem for um NAK
+                        self.ackok = True # muda a flag pra avisar que não esta corrompido
+                        self.ackflag = True # muda a flag pra avisar que o ack foi recebido
+                # se a mensagem for um NAK
                 elif message == 'NAK':
+                    # se a msg não tiver corrompida
                     if state == 'ACK':
-                        self.ackflag = True
-                        self.ackok = False
-                #se a mensagem for um finak e ai encerra a conexão
-                elif message == 'FINAK':
+                        self.ackflag = True # muda a flag pra avisar que o ack/nak foi recebido
+                # se a mensagem for um finak e ai encerra a conexão
+                elif message == 'FINACK':
+                    # se a msg não tiver corrompida
                     if state == 'ACK':
-                        self.ackflag = True
-                        self.connected = False
+                        self.ackflag = True # muda a flag pra avisar que um ack/nak foi recebido
+                        self.connected = False # fecha a conexão
+                # se a msg for qualquer outra
                 else:
-                    if state == 'ACK':
-                        if seqnumb != self.lastseqnumber:
-                            if self.connected:
-                                self.message_defrag(message)
-                                self.sndack('ACK', seqnumb)
-                                self.lastseqnumber = seqnumb
+                    if state == 'ACK': #se ela não tiver corrompida
+                        if seqnumb != self.lastseqnumber: # se não for repetida
+                            self.message_defrag(message) # manda a msg recebida pra desfragmentação
+                            self.sndack('ACK', seqnumb) # manda o ack da mensagem
+                            self.lastseqnumber = seqnumb # atualiza o ultimo seqnumber recebido
                     #se a mensagem tiver corrompida, envia um NAK para o cliente
                     else:
                         self.sndack('NAK', seqnumb)
@@ -172,38 +183,42 @@ class UDPClient:  # criando a classe do cliente
     #função de enviar
     def sndpkt(self, data):
         self.seqnumber = (self.seqnumber + 1)%2
-        # envia arquivos para o servirdor
+        # envia arquivos para o servidor
         sndpkt = functions.make_pkt(data, self.seqnumber)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
         self.socket.settimeout(0.01)
+        # coloca ambas as flags pra negativo
         self.ackflag = False
         self.ackok = False
-        #tentar receber o ack
+        # tenta receber o ack
         try:
+            #chama a função de esperar ack
             flag = self.waitack()
+            #se for um nak recebido reenvia o pacote
             if not flag:
                 self.sndpkt(data)
-        #caso dê timeout
+        #caso dê timeout reenvia o pacote
         except socket.timeout:
             print('SOCKET TIMEOUT')
             self.sndpkt(data)
     
+    # função para enviar ack
     def sndack(self, data, seqnumb):
         # envia ack para o servirdor
         sndpkt = functions.make_pkt(data, seqnumb)
         self.socket.sendto(sndpkt.encode(), self.hostaddress)
 
-    #função para esperar o ack
+    # função para esperar o ack
     def waitack(self):
-        #espera receber ack
+        # espera receber ack
         while not self.ackflag:
             self.ackflag = False
+        # se o for um ack, retorna verdadeiro
         if self.ackok:
             return True
+        # se for um nak retorna falso
         else:
             return False
-
-
 
 # inicia o chat
 if __name__ == "__main__":
