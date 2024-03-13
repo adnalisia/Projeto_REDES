@@ -14,7 +14,7 @@ Link: _https://drive.google.com/file/d/1-geHDXtXxNPqR8PzOMX_egfZdcNWF0dW/view?us
 ### Como rodar o programa
 
 1. É necessário ter o Python instalado no computador. Para isso, acesse o _https://www.python.org/downloads/_ e clique na versão mais atualizada do python
-2. Baixe os arquivos .py contidos neste repósitório. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
+2. Baixe os arquivos .py da pasta _Primeira Etapa_ contida neste repósitório. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
 3. Abra em um compilador a pasta com os arquivos.
 4. Inicie **primeiro** o arquivo com nome server.py.
 5. Abra um novo terminal para iniciar o arquivo client.py.
@@ -45,7 +45,7 @@ Link:
 ### Como rodar o programa
 
 1. É necessário ter o Python instalado no computador. Para isso, acesse o _https://www.python.org/downloads/_ e clique na versão mais atualizada do python
-2. Baixe os arquivos .py contidos neste repósitório. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
+2. Baixe os arquivos .py da pasta _Segunda Etapa_ contida neste repósitório. **É ESSENCIAL QUE TODOS OS ARQUIVOS ESTEJAM NA MESMA PASTA**
 3. Abra em um compilador a pasta com os arquivos.
 4. Inicie **primeiro** o arquivo com nome server.py.
 5. Abra um novo terminal para iniciar o arquivo client.py.
