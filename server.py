@@ -69,11 +69,12 @@ class UDPServer:
                             self.seqnumberlist[address] = seqnumb # atualiza o seqnumber
                             if message == "bye": # se a mensagem for bye
                                 nickname = self.nicknames.get(address) # recupera nickname que está no dicionário com base no address
-                                print(f'{nickname} saiu do servidor.') # print no terminal do servidor
-                                self.messages.put((f'\n{nickname} saiu do chat!', address))
-                                self.messages.put(('finish', address)) # envia mensagem para todos os clientes informando que cliente saiu
-                                self.removeclient(address) # remove o cliente de todas as listas
-                                self.sndack('FINACK', address, seqnumb) # envia um finack para encerrar a conexão
+                                if nickname != None:
+                                    print(f'{nickname} saiu do servidor.') # print no terminal do servidor
+                                    self.messages.put((f'\n{nickname} saiu do chat!', address))
+                                    self.messages.put(('finish', address)) # envia mensagem para todos os clientes informando que cliente saiu
+                                    self.removeclient(address) # remove o cliente de todas as listas
+                                    self.sndack('FINACK', address, seqnumb) # envia um finack para encerrar a conexão
                             elif message.startswith("hi, meu nome eh "): # se for a mensagem de conexão
                                 self.clients.add(address) # adiciona na lista de endereços
                                 print(f'Conexão estabelecida com {address}')
