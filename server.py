@@ -119,6 +119,7 @@ class UDPServer:
         self.socket.settimeout(1.0)
         # tentar receber o ack
         try:
+            print(f'Esperando ACK de {client}.')
             # chama a função ack
             flag = self.waitack()
             # se for um NAK
@@ -138,7 +139,7 @@ class UDPServer:
     def waitack(self):
         # espera o recebimento de um ack
         while not self.ackflag:
-            self.ackflag = False
+            pass
         # se receber e for NAK
         if self.ackok:
             return True

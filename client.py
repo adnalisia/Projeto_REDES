@@ -50,7 +50,6 @@ class UDPClient:  # criando a classe do cliente
                 # se não receber um input faz nada
                 except:
                     pass
-
         else:
             # caso a mensagem inicial esteja errada
             print(
@@ -184,7 +183,7 @@ class UDPClient:  # criando a classe do cliente
         # Se a mensagem atual contém 'finish'
         if 'finish' == message:
             #printa a mensagem
-            print (self.messagequeue)
+            print(self.messagequeue)
             #limpa a fila
             self.messagequeue = ''
         #se não for, adiciona a mensagem a fila
@@ -223,7 +222,7 @@ class UDPClient:  # criando a classe do cliente
     def waitack(self):
         # espera receber ack
         while not self.ackflag:
-            self.ackflag = False
+            pass
         # se o for um ack, retorna verdadeiro
         if self.ackok:
             return True
