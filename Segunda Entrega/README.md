@@ -40,7 +40,7 @@ Link: _https://drive.google.com/file/d/1-geHDXtXxNPqR8PzOMX_egfZdcNWF0dW/view?us
 Implementação de um sistema de chat básico com transferência confiável, utilizando o protocolo RDT 3.0 conforme descrito por Kurose. Ele inclui detecção de erros por meio de checksum, confirmações ACK, timeout e retransmissão de pacotes. As etapas do processo são detalhadas em tempo de execução para garantir coerência e compreensão do funcionamento do algoritmo.
 
 ### Vídeo do programa
-Link: https://drive.google.com/file/d/1ONxmSqZ-rSQ5wpE7GfKDME5fJT4AKMTA/view
+Link: [https://drive.google.com/file/d/1ONxmSqZ-rSQ5wpE7GfKDME5fJT4AKMTA/view](https://drive.google.com/file/d/1ONxmSqZ-rSQ5wpE7GfKDME5fJT4AKMTA/view?usp=sharing)
 
 ### Como rodar o programa
 
