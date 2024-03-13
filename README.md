@@ -1,5 +1,7 @@
 # Projeto de Rede de Computadores
 
+## PRIMEIRA ETAPA
+
 ### Descrição do Projeto
 
 Implementação de comunicação UDP utilizando a biblioteca Socket na linguagem Python, com troca de arquivos em formato de texto (.txt) em pacotes de até
@@ -30,3 +32,7 @@ Link: _https://drive.google.com/file/d/1-geHDXtXxNPqR8PzOMX_egfZdcNWF0dW/view?us
 -Permite a verificação do tamanho em bytes do arquivo.
 - **random**
 -Permite a criação de números aleátorios.
+
+## SEGUNDA ETAPA
+
+### Descrição do projeto
