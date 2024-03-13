@@ -25,9 +25,9 @@ class UDPServer:
         while True:
             try:
                 #pega a próxima mensagem a ser envida na fila
-                message = self.messages.get() 
+                message, address = self.messages.get() 
                 #envia a mensagem para todos
-                self.send_to_all(message)
+                self.send_to_all(message, address)
             except:
                 pass
 
@@ -70,7 +70,8 @@ class UDPServer:
                             if message == "bye": # se a mensagem for bye
                                 nickname = self.nicknames.get(address) # recupera nickname que está no dicionário com base no address
                                 print(f'{nickname} saiu do servidor.') # print no terminal do servidor
-                                self.messages.put(f'{nickname} saiu do chat!') # envia mensagem para todos os clientes informando que cliente saiu
+                                self.messages.put((f'\n{nickname} saiu do chat!', address))
+                                self.messages.put(('finish', address)) # envia mensagem para todos os clientes informando que cliente saiu
                                 self.removeclient(address) # remove o cliente de todas as listas
                                 self.sndack('FINACK', address, seqnumb) # envia um finack para encerrar a conexão
                             elif message.startswith("hi, meu nome eh "): # se for a mensagem de conexão
@@ -79,9 +80,10 @@ class UDPServer:
                                 self.sndack('SYNACK', address, seqnumb) # envia o synack
                                 nickname =  message[16:] # estipula o nickname
                                 self.nicknames[address] = nickname # adiciona nickname ao dicionário de nicknames com a chave sendo o address
-                                #self.messages.put(f'{nickname} entrou no chat!') # coloca a mensagem de que fulano entrou no chat na fila
+                                self.messages.put((f'{nickname} entrou no chat!', address))
+                                self.messages.put(('finish', address)) # coloca a mensagem de que fulano entrou no chat na fila
                             else: # se for qualquer outra mensagem
-                                self.messages.put(message) # coloca a mensagem na fila                
+                                self.messages.put((message, address)) # coloca a mensagem na fila                
                                 self.sndack('ACK', address, seqnumb) # envia o ack da mensagem
                                 print(f'Mensagem recebida de {address}. ACK enviado.')
                     else: # se a mensagem tiver corrompida
@@ -99,11 +101,12 @@ class UDPServer:
 
 
     # def usado dentro do broadcasting para enviar a mensagem para todos os clientes
-    def send_to_all(self, message):
+    def send_to_all(self, message, address):
         self.seqnumber = (self.seqnumber+1)%2
         # para cada cliente na lista de clientes ele envia a mensagem codificada
         for client in self.clients:
-            self.sndpkt(message, client, self.seqnumber)
+            if client != address:
+                self.sndpkt(message, client, self.seqnumber)
 
     # função de enviar
     def sndpkt(self, data, client, seqnumber):

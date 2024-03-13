@@ -44,7 +44,7 @@ class UDPClient:  # criando a classe do cliente
             while self.connected:
                 # tenta receber um input
                 try:
-                    message = input("(Para sair do chat digite 'bye'): ")
+                    message = input()
                     #manda a mensagem pra fragmentação
                     self.message_treatment(message)  
                 # se não receber um input faz nada
@@ -86,15 +86,18 @@ class UDPClient:  # criando a classe do cliente
             self.threeway_handshake(hello_message)
 
     # função para tratar as mensagens seguintes:
-    def message_treatment(self, initial_message):
-        # variável com o tempo e a hora exata
-        now = datetime.now()
-        # cria um timestamp pra ser usado no cabeçalho da mensagem e no titulo dos arquivos fragmentados
-        timestamp = f"{now.hour}:{now.minute}:{now.second} {now.day}/{now.month}/{now.year}"
-        # bota cabeçalho
-        segment = f"{self.client_IP}:{self.client_port}/~{self.nickname}: {initial_message} {timestamp}"
-        # chama a função pra fragmentar
-        self.message_fragment(segment)
+    def message_treatment(self, message):
+        if message == 'bye':
+            self.sndpkt(message)
+        else:
+            # variável com o tempo e a hora exata
+            now = datetime.now()
+            # cria um timestamp pra ser usado no cabeçalho da mensagem e no titulo dos arquivos fragmentados
+            timestamp = f"{now.hour}:{now.minute}:{now.second} {now.day}/{now.month}/{now.year}"
+            # bota cabeçalho
+            segment = f"{self.client_IP}:{self.client_port}/~{self.nickname}: {message} {timestamp}"
+            # chama a função pra fragmentar
+            self.message_fragment(segment)
 
 
     # função para lidar com as mensagens
